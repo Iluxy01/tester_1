@@ -3,44 +3,68 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0D0B22">
 <title>Проверь себя</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#EAF4FF;--ink:#1B2559;--coral:#FF7A6B;--violet:#7C6CFF;--sun:#FFC94D;--teal:#2DD4BF}
+:root{--bg:#0D0B22;--tx:#F2F0FF;--mut:rgba(242,240,255,.55);--glass:rgba(255,255,255,.07);--line:rgba(255,255,255,.12)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;background:var(--bg);color:var(--ink);font:600 16px/1.4 Nunito,system-ui,sans-serif;
-padding:max(20px,env(safe-area-inset-top)) 18px max(24px,env(safe-area-inset-bottom));user-select:none}
+html{background:var(--bg)}
+body{margin:0;min-height:100vh;color:var(--tx);font:500 16px/1.4 Onest,system-ui,sans-serif;user-select:none;
+padding:max(20px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom))}
+body::before,body::after{content:"";position:fixed;z-index:-1;width:420px;height:420px;border-radius:50%;filter:blur(90px);opacity:.55}
+body::before{background:#6B4DFF;top:-140px;left:-120px}
+body::after{background:#FF3D8B;bottom:-160px;right:-140px;opacity:.4}
 main{max-width:480px;margin:0 auto}
-h1{font-size:34px;font-weight:900;line-height:1.05;margin:8px 0 4px}
-.sub{margin:0 0 24px;opacity:.6}
-.row{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:14px;width:100%;margin-bottom:14px;padding:16px;cursor:pointer;
-background:#fff;border-radius:28px;box-shadow:0 8px 24px rgba(27,37,89,.08);transition:transform .12s}
-.row:active{transform:scale(.97)}
-.row:focus-visible{outline:3px solid var(--violet)}
-.ic{flex:none;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-size:26px;background:var(--c)}
-.txt{flex:1}.txt b{display:block;font-size:18px;font-weight:800}.txt span{font-size:14px;opacity:.6}
-.best{text-align:right;font-weight:900;font-size:22px}.best small{display:block;font-size:12px;font-weight:600;opacity:.5}
-.badge{margin-top:18px;font-size:13px;opacity:.55;text-align:center}
-.pad{all:unset;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
-width:100%;height:72vh;border-radius:44px;font-size:36px;font-weight:900;text-align:center;cursor:pointer;touch-action:manipulation}
-.pad small{font-size:15px;font-weight:600;opacity:.75}
-.q{font-size:24px;font-weight:800;line-height:1.25;margin:10px 0 18px}
-.opt{all:unset;box-sizing:border-box;display:block;width:100%;padding:16px 18px;margin-bottom:10px;cursor:pointer;
-background:#fff;border-radius:22px;font-weight:800;box-shadow:0 4px 14px rgba(27,37,89,.07)}
-.opt:active{background:var(--violet);color:#fff}
-.bar{height:10px;border-radius:9px;background:#fff;overflow:hidden;margin-bottom:14px}.bar i{display:block;height:100%;background:var(--violet);transition:width .25s}
-.res{text-align:center;padding:36px 20px;border-radius:44px;background:var(--c)}
-.res .big{font-size:76px;font-weight:900;line-height:1}
-.btn{all:unset;box-sizing:border-box;display:block;width:100%;text-align:center;margin-top:12px;padding:16px;cursor:pointer;border-radius:22px;background:#fff;font-weight:800}
-.btn.main{background:var(--ink);color:#fff}
+h1{font-size:30px;font-weight:800;letter-spacing:-.02em;margin:6px 4px 18px}
+h2{margin:0;font-size:20px;font-weight:800;letter-spacing:-.01em}
+.glass{background:var(--glass);border:1px solid var(--line);border-radius:28px;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.hero{display:flex;align-items:center;gap:18px;padding:20px;margin-bottom:12px}
+.hero p{margin:4px 0 0;color:var(--mut);font-size:14px}
+.rw{position:relative;flex:none}
+.rc{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.rc b{font-size:34px;font-weight:800;line-height:1}.rc span{font-size:12px;color:var(--mut)}
+.ring{transform:rotate(-90deg);display:block}
+.trk,.arc{fill:none;stroke-width:9}.trk{stroke:rgba(255,255,255,.09)}
+.arc{stroke-linecap:round;stroke-dasharray:264;animation:fill 1.2s cubic-bezier(.2,.8,.2,1)}
+@keyframes fill{from{stroke-dashoffset:264}}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{all:unset;box-sizing:border-box;position:relative;overflow:hidden;cursor:pointer;padding:16px;min-height:150px;display:flex;flex-direction:column;
+background:var(--glass);border:1px solid var(--line);border-radius:28px;transition:transform .15s}
+.card::before{content:"";position:absolute;width:120px;height:120px;right:-40px;top:-40px;border-radius:50%;background:linear-gradient(135deg,var(--a),var(--b));opacity:.35;filter:blur(24px)}
+.card:active{transform:scale(.96)}.card:focus-visible{outline:2px solid var(--a)}
+.card.wide{grid-column:span 2;min-height:130px}
+.ic{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-size:21px;background:linear-gradient(135deg,var(--a),var(--b));position:relative}
+.card .t{margin-top:12px;font-weight:700;color:var(--mut);font-size:14px}
+.v{margin-top:auto;font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.v small{font-size:13px;font-weight:600;color:var(--mut);margin-left:5px;letter-spacing:0}
+.pb{height:6px;border-radius:6px;background:rgba(255,255,255,.1);margin-top:10px;overflow:hidden}
+.pb i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--a),var(--b))}
+.badge{margin-top:18px;font-size:12px;color:var(--mut);text-align:center}
+.pad{all:unset;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%;height:74vh;
+border-radius:40px;font-size:38px;font-weight:800;letter-spacing:-.02em;text-align:center;cursor:pointer;touch-action:manipulation;
+color:#fff;background:linear-gradient(160deg,var(--a),var(--b));box-shadow:0 20px 70px -10px var(--a)}
+.pad small{font-size:15px;font-weight:500;opacity:.8;letter-spacing:0}
+.q{font-size:25px;font-weight:800;line-height:1.25;letter-spacing:-.01em;margin:14px 4px 20px}
+.opt{all:unset;box-sizing:border-box;display:block;width:100%;padding:17px 18px;margin-bottom:10px;cursor:pointer;font-weight:700;
+background:var(--glass);border:1px solid var(--line);border-radius:20px}
+.opt:active{background:linear-gradient(135deg,var(--a),var(--b))}
+.bar{height:6px;border-radius:6px;background:rgba(255,255,255,.1);overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--a),var(--b));transition:width .3s}
+.res{text-align:center;padding:32px 20px 28px}
+.res .rw{margin:0 auto 14px}.res .rc b{font-size:46px}
+.res p{color:var(--mut);margin:10px 0 0}
+.btn{all:unset;box-sizing:border-box;display:block;width:100%;text-align:center;margin-top:12px;padding:16px;cursor:pointer;font-weight:800;
+border-radius:20px;background:var(--glass);border:1px solid var(--line)}
+.btn.main{background:var(--tx);color:var(--bg);border-color:transparent}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 <main>
   <section id="home">
     <h1 id="hello">Привет!</h1>
-    <p class="sub">Выбери проверку и узнай свой результат</p>
     <div id="list"></div>
     <div class="badge" id="badge"></div>
   </section>
@@ -49,30 +73,49 @@ background:#fff;border-radius:22px;font-weight:800;box-shadow:0 4px 14px rgba(27
 
 <script>
 const tg = Telegram.WebApp; tg.ready(); tg.expand();
+try { tg.setHeaderColor('#0D0B22'); tg.setBackgroundColor('#0D0B22'); } catch {}
 const $ = s => document.querySelector(s);
 
 // initDataUnsafe — только для показа имени. Доверенная проверка идёт на сервере (/api/verify).
-$('#hello').textContent = 'Привет, ' + (tg.initDataUnsafe?.user?.first_name || 'гость') + '!';
+$('#hello').textContent = 'Привет, ' + (tg.initDataUnsafe?.user?.first_name || 'гость');
 
-// Результаты хранятся в облаке Telegram у самого пользователя (без своей базы данных).
 const cloud = tg.initData && tg.isVersionAtLeast?.('6.9') && tg.CloudStorage;
 const parse = s => { try { return JSON.parse(s) || {}; } catch { return {}; } };
 let best = {};
 const load = cb => cloud ? tg.CloudStorage.getItem('best', (e, v) => cb(parse(v))) : cb(parse(localStorage.getItem('best')));
 const save = () => { const s = JSON.stringify(best); cloud ? tg.CloudStorage.setItem('best', s) : (() => { try { localStorage.setItem('best', s); } catch {} })(); };
 
+const clamp = x => Math.max(0, Math.min(1, x));
 const META = [
-  { key:'reaction', title:'Реакция',        desc:'3 раунда',      icon:'⚡', c:'var(--sun)',    unit:'мс',    rule:'min' },
-  { key:'iq',       title:'IQ-тест',        desc:'6 задач',       icon:'🧠', c:'var(--violet)', unit:'IQ',    rule:'max' },
-  { key:'taps',     title:'Скорость тапов', desc:'10 секунд',     icon:'👆', c:'var(--teal)',   unit:'тап/с', rule:'max' },
+  { key:'reaction', title:'Реакция',        icon:'⚡', a:'#FF5C8A', b:'#FF9A5C', unit:'мс',    rule:'min', norm:v => (500 - v) / 350 },
+  { key:'iq',       title:'IQ-тест',        icon:'🧠', a:'#8B7BFF', b:'#4FC3FF', unit:'IQ',    rule:'max', norm:v => (v - 70) / 70 },
+  { key:'taps',     title:'Скорость тапов', icon:'👆', a:'#3CFFB0', b:'#3CB4FF', unit:'тап/с', rule:'max', norm:v => v / 10 },
 ];
 
+const ring = (p, a, b, size) => {
+  const id = 'g' + Math.random().toString(36).slice(2);
+  return `<svg class="ring" width="${size}" height="${size}" viewBox="0 0 100 100"><defs><linearGradient id="${id}"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs>
+  <circle class="trk" cx="50" cy="50" r="42"/><circle class="arc" cx="50" cy="50" r="42" stroke="url(#${id})" style="stroke-dashoffset:${264*(1-clamp(p))}"/></svg>`;
+};
+function countUp(el, to, dec = 0){
+  const t0 = performance.now();
+  (function f(t){ const k = clamp((t - t0) / 900), e = 1 - Math.pow(1 - k, 3);
+    el.textContent = (to * e).toFixed(dec); if (k < 1) requestAnimationFrame(f); })(t0);
+}
+
 function renderList(){
-  $('#list').innerHTML = META.map(m => `<button class="row" data-k="${m.key}">
-    <span class="ic" style="--c:${m.c}">${m.icon}</span>
-    <span class="txt"><b>${m.title}</b><span>${m.desc}</span></span>
-    <span class="best">${best[m.key] ?? '—'}<small>${m.unit}</small></span></button>`).join('');
-  document.querySelectorAll('.row').forEach(b => b.onclick = () => { show('stage'); TESTS[b.dataset.k](); });
+  const ns = META.filter(m => best[m.key] != null).map(m => clamp(m.norm(best[m.key])));
+  const total = ns.length ? Math.round(ns.reduce((a, b) => a + b) / ns.length * 100) : 0;
+  $('#list').innerHTML = `
+    <div class="glass hero"><div class="rw">${ring(total/100, '#8B7BFF', '#FF5C8A', 118)}
+      <div class="rc"><b>${ns.length ? total : '—'}</b><span>из 100</span></div></div>
+      <div><h2>Общий рейтинг</h2><p>${ns.length === 3 ? 'Все тесты пройдены' : `Пройдено ${ns.length} из ${META.length}. Пройди все, чтобы получить полный рейтинг.`}</p></div></div>
+    <div class="grid">${META.map(m => { const v = best[m.key];
+      return `<button class="card ${m.key === 'reaction' ? 'wide' : ''}" data-k="${m.key}" style="--a:${m.a};--b:${m.b}">
+        <span class="ic">${m.icon}</span><span class="t">${m.title}</span>
+        <span class="v">${v ?? '—'}<small>${m.unit}</small></span>
+        <span class="pb"><i style="width:${v == null ? 0 : Math.round(clamp(m.norm(v))*100)}%"></i></span></button>`; }).join('')}</div>`;
+  document.querySelectorAll('.card').forEach(b => b.onclick = () => { show('stage'); TESTS[b.dataset.k](); });
 }
 load(v => { best = v; renderList(); });
 
@@ -84,41 +127,46 @@ function show(v){
 }
 tg.BackButton.onClick(() => show('home'));
 
+const accent = m => `--a:${m.a};--b:${m.b}`;
 function finish(key, value, verdict){
   const m = META.find(x => x.key === key);
   if (best[key] == null || (m.rule === 'max' ? value > best[key] : value < best[key])) { best[key] = value; save(); }
   tg.HapticFeedback?.notificationOccurred('success');
-  $('#stage').innerHTML = `<div class="res" style="--c:${m.c}"><div class="big">${value}</div><b>${m.unit}</b><p>${verdict}</p></div>
+  $('#stage').innerHTML = `<div class="glass res" style="${accent(m)}"><div class="rw">${ring(m.norm(value), m.a, m.b, 190)}
+    <div class="rc"><b id="cnt">0</b><span>${m.unit}</span></div></div><h2>${verdict}</h2>
+    <p>${best[key] === value ? 'Твой лучший результат' : 'Лучший: ' + best[key] + ' ' + m.unit}</p></div>
     <button class="btn main" id="again">Ещё раз</button><button class="btn" id="back">Назад</button>`;
+  countUp($('#cnt'), value, key === 'taps' ? 1 : 0);
   $('#again').onclick = () => TESTS[key](); $('#back').onclick = () => show('home');
 }
 
+const padStyle = k => accent(META.find(m => m.key === k));
 const TESTS = {
   reaction(){
     const t = []; let n = 0, t0, timer;
     const round = () => {
-      $('#stage').innerHTML = `<button class="pad" id="p" style="background:var(--coral);color:#fff">Жди зелёного<small>Раунд ${n+1} из 3</small></button>`;
+      $('#stage').innerHTML = `<button class="pad" id="p" style="${padStyle('reaction')}">Жди зелёного<small>Раунд ${n+1} из 3</small></button>`;
       const p = $('#p'); let ready = false;
-      timer = setTimeout(() => { ready = true; p.style.background = 'var(--teal)'; p.innerHTML = 'Жми!'; t0 = performance.now(); }, 1000 + Math.random()*3000);
+      timer = setTimeout(() => { ready = true; p.style.cssText = '--a:#3CFFB0;--b:#3CB4FF'; p.innerHTML = 'Жми!'; t0 = performance.now(); }, 1000 + Math.random()*3000);
       p.onpointerdown = () => {
-        if (!ready){ clearTimeout(timer); p.style.background = 'var(--sun)'; p.style.color = 'var(--ink)'; p.innerHTML = 'Рано!<small>Тапни, чтобы повторить</small>'; p.onpointerdown = round; return; }
+        if (!ready){ clearTimeout(timer); p.style.cssText = '--a:#8B7BFF;--b:#4FC3FF'; p.innerHTML = 'Рано!<small>Тапни, чтобы повторить раунд</small>'; p.onpointerdown = round; return; }
         t.push(performance.now() - t0);
         if (++n < 3) return round();
-        const v = Math.round(t.reduce((a,b) => a+b) / 3);
-        finish('reaction', v, v < 220 ? 'Молниеносно!' : v < 300 ? 'Быстрее большинства.' : v < 400 ? 'Нормальная реакция.' : 'Ещё не проснулся?');
+        const v = Math.round(t.reduce((a, b) => a + b) / 3);
+        finish('reaction', v, v < 220 ? 'Молниеносно!' : v < 300 ? 'Быстрее большинства' : v < 400 ? 'Нормальная реакция' : 'Ещё не проснулся?');
       };
     };
     round();
   },
   taps(){
     let n = 0, on = false;
-    $('#stage').innerHTML = `<button class="pad" id="p" style="background:var(--teal)">Жми!<small>Отсчёт с первого тапа</small></button>`;
+    $('#stage').innerHTML = `<button class="pad" id="p" style="${padStyle('taps')}">Жми!<small>Отсчёт с первого тапа</small></button>`;
     const p = $('#p');
     p.onpointerdown = () => {
       p.innerHTML = ++n + '<small>тапов</small>';
       if (on) return; on = true;
       setTimeout(() => { p.onpointerdown = null; const v = +(n/10).toFixed(1);
-        finish('taps', v, v >= 8 ? 'Пальцы-пулемёты!' : v >= 5 ? 'Уверенный темп.' : 'Разминка засчитана.'); }, 10000);
+        finish('taps', v, v >= 8 ? 'Пальцы-пулемёты!' : v >= 5 ? 'Уверенный темп' : 'Разминка засчитана'); }, 10000);
     };
   },
   iq(){
@@ -132,20 +180,19 @@ const TESTS = {
     ];
     let i = 0, ok = 0;
     const ask = () => {
-      $('#stage').innerHTML = `<div class="bar"><i style="width:${i/Q.length*100}%"></i></div><p class="q">${Q[i][0]}</p>` +
-        Q[i][1].map((o,k) => `<button class="opt" data-k="${k}">${o}</button>`).join('');
+      $('#stage').innerHTML = `<div style="${padStyle('iq')}"><div class="bar"><i style="width:${i/Q.length*100}%"></i></div><p class="q">${Q[i][0]}</p>` +
+        Q[i][1].map((o, k) => `<button class="opt" data-k="${k}">${o}</button>`).join('') + '</div>';
       document.querySelectorAll('.opt').forEach(b => b.onclick = () => {
         if (+b.dataset.k === Q[i][2]) ok++;
         if (++i < Q.length) return ask();
         const v = Math.round(80 + ok*8.5);
-        finish('iq', v, `Верно ${ok} из ${Q.length}. ` + (v >= 120 ? 'Сильный результат!' : v >= 100 ? 'Твёрдая середина.' : 'Есть куда расти.'));
+        finish('iq', v, `Верно ${ok} из ${Q.length}. ` + (v >= 120 ? 'Сильный результат!' : v >= 100 ? 'Твёрдая середина' : 'Есть куда расти'));
       });
     };
     ask();
   }
 };
 
-// Проверка подписи на сервере
 fetch('/api/verify', { headers: { 'X-Init-Data': tg.initData || '' } })
   .then(r => r.json())
   .then(d => { $('#badge').textContent = d.ok ? '✓ Аккаунт Telegram подтверждён' : ''; })
