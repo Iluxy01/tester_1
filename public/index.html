@@ -13,7 +13,7 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{background:var(--bg)}
 body{margin:0;min-height:100vh;color:var(--tx);font:500 16px/1.4 Onest,system-ui,sans-serif;user-select:none;
-padding:max(20px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom));overflow-x:hidden}
+padding:max(34px,calc(env(safe-area-inset-top,0px) + 20px)) 16px max(24px,calc(env(safe-area-inset-bottom,0px) + 16px));overflow-x:hidden}
 body::before,body::after{content:"";position:fixed;z-index:-2;width:440px;height:440px;border-radius:50%;filter:blur(95px)}
 body::before{background:#5F45FF;top:-150px;left:-130px;opacity:.5;animation:driftO 9s ease-in-out infinite alternate}
 body::after{background:#FF3D8B;bottom:-170px;right:-150px;opacity:.38;animation:driftO 11s ease-in-out infinite alternate-reverse}
@@ -118,9 +118,21 @@ border:1px solid rgba(255,255,255,.25);cursor:pointer;transition:background .15s
 .mbar i{display:block;height:100%;background:rgba(255,255,255,.95);transition:width .4s}
 
 /* кнопка завершения и выбор уровня/возраста IQ */
-.exbtn{all:unset;box-sizing:border-box;display:block;width:100%;margin-top:12px;padding:13px;cursor:pointer;font-weight:700;font-size:15px;
-text-align:center;color:#fff;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.28);border-radius:16px;transition:transform .15s}
-.exbtn:active{transform:scale(.98)}
+.exbtn{all:unset;box-sizing:border-box;position:fixed;left:50%;bottom:max(18px,calc(env(safe-area-inset-bottom,0px) + 14px));transform:translateX(-50%);
+z-index:40;width:min(448px,calc(100% - 32px));padding:14px;cursor:pointer;font-weight:700;font-size:15px;text-align:center;color:#fff;
+background:rgba(20,18,45,.78);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:18px;transition:transform .15s}
+.exbtn:active{transform:translateX(-50%) scale(.97)}
+#stage{padding-bottom:92px}
+
+/* модальное окно подтверждения */
+.modal{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:24px;background:rgba(6,5,20,.6);
+backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:0;transition:opacity .2s}
+.modal.show{opacity:1}
+.mbox{width:100%;max-width:340px;padding:24px 20px;border-radius:28px;text-align:center;background:#171532;border:1px solid var(--line);
+transform:scale(.92);transition:transform .2s cubic-bezier(.2,.8,.2,1)}
+.modal.show .mbox{transform:scale(1)}
+.mbox p{margin:0;font-size:20px;font-weight:800}
+.mbox small{display:block;margin:8px 0 18px;color:var(--mut);font-size:13.5px}
 .ilab{margin:16px 2px 8px;font-size:12px;font-weight:800;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;text-align:left}
 .ichips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:2px}
 .chip{all:unset;box-sizing:border-box;padding:9px 13px;border-radius:12px;cursor:pointer;font-weight:700;font-size:14px;
@@ -186,7 +198,7 @@ const erf = x => { const a = Math.abs(x), t = 1 / (1 + 0.3275911 * a);
 const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const META = [
   { key:'reaction', title:'Реакция',        icon:'⚡', a:'#FF5C8A', b:'#FF9A5C', unit:'мс',    rule:'min', norm:v => (500 - v) / 350 },
-  { key:'iq',       title:'IQ-тест',        icon:'🧠', a:'#8B7BFF', b:'#4FC3FF', unit:'IQ',    rule:'max', norm:v => (v - 70) / 70 },
+  { key:'iq',       title:'Логика',         icon:'🧠', a:'#8B7BFF', b:'#4FC3FF', unit:'IQ',    rule:'max', norm:v => (v - 70) / 70 },
   { key:'taps',     title:'Скорость тапов', icon:'👆', a:'#3CFFB0', b:'#3CB4FF', unit:'тап/с', rule:'max', norm:v => v / 10 },
   { key:'memory',   title:'Память',         icon:'🎴', a:'#FFD34D', b:'#FF7A3D', unit:'из 10', rule:'max', norm:v => v / 10 },
 ];
@@ -223,15 +235,27 @@ function confetti(colors){
   setTimeout(() => fx.remove(), 1900);
 }
 
-function wireExit(g){
+function askModal(title, note, onYes){
+  haptic('impact', 'light');
+  const ov = document.createElement('div');
+  ov.className = 'modal';
+  ov.innerHTML = `<div class="mbox"><p>${title}</p><small>${note}</small>
+    <button class="btn main" id="myes">Да, завершить</button><button class="btn" id="mno">Продолжить</button></div>`;
+  document.body.appendChild(ov);
+  requestAnimationFrame(() => ov.classList.add('show'));
+  const close = () => { ov.classList.remove('show'); setTimeout(() => ov.remove(), 200); };
+  ov.querySelector('#myes').onclick = () => { close(); onYes(); };
+  ov.querySelector('#mno').onclick = close;
+  ov.onclick = e => { if (e.target === ov) close(); };
+}
+
+function wireExit(g, direct){
   const b = document.getElementById('exit');
   if (!b) return;
   b.onclick = () => {
     if (g !== gen) return;
-    const quit = () => { gen++; show('home'); };
-    const msg = 'Завершить тест? Результат не будет сохранён.';
-    if (tg.showConfirm) tg.showConfirm(msg, ok => { if (ok) quit(); });
-    else if (confirm(msg)) quit();
+    if (direct) return show('home');
+    askModal('Завершить тест?', 'Результат не будет сохранён', () => { gen++; show('home'); });
   };
 }
 
@@ -257,8 +281,7 @@ load(v => { best = normalize(v); renderList(); });
 // и колбэки из предыдущего экрана просто ничего не делают
 $('#reset').onclick = () => {
   const doReset = () => { best = {}; save(); renderList(); haptic('notify', 'success'); };
-  if (tg.showConfirm) tg.showConfirm('Сбросить весь прогресс? Это действие необратимо.', ok => { if (ok) doReset(); });
-  else if (confirm('Сбросить весь прогресс?')) doReset();
+  askModal('Сбросить весь прогресс?', 'Это действие необратимо', doReset);
 };
 
 let gen = 0;
@@ -386,8 +409,8 @@ const TESTS = {
       if (g !== gen) return;
       const ready = level && ageIdx >= 0;
       $('#stage').innerHTML = `<div class="glass res" style="--a:#8B7BFF;--b:#4FC3FF">
-        <h2>IQ-тест</h2>
-        <p style="margin-top:8px">Норма зависит от возраста: до 15 лет — IQ по ментальному возрасту (шкала Бине, 1911), с 16 лет — отклонение от среднего 100 при σ = 15 (шкала Векслера).</p>
+        <h2>Тест на логику</h2>
+        <p style="margin-top:8px">Результат выражается в баллах IQ. Норма зависит от возраста: до 15 лет — IQ по ментальному возрасту (шкала Бине, 1911), с 16 лет — отклонение от среднего 100 при σ = 15 (шкала Векслера).</p>
         <div class="ilab">Уровень</div>
         <button class="opt il ${level === 10 ? 'sel' : ''}" data-l="10"><b>Базовый</b><small>10 вопросов · быстрая оценка</small></button>
         <button class="opt il ${level === 26 ? 'sel' : ''}" data-l="26"><b>Точный</b><small>26 вопросов · оценка с точностью до 5 IQ</small></button>
@@ -399,7 +422,7 @@ const TESTS = {
       document.querySelectorAll('.chip').forEach(b => b.onclick = () => { if (g !== gen) return; ageIdx = +b.dataset.i; haptic('impact', 'light'); intro(); });
       const goBtn = document.getElementById('go');
       goBtn.onclick = () => { if (g !== gen || !ready) return; start(); };
-      wireExit(g);
+      wireExit(g, true);
     };
     const start = () => {
       if (g !== gen) return;
