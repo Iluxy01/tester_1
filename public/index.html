@@ -44,7 +44,7 @@ background:linear-gradient(115deg,rgba(255,255,255,.13) 0%,transparent 32%)}
 .hero p{margin:4px 0 0;color:var(--mut);font-size:14px}
 .rw{position:relative;flex:none}
 .rc{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
-.rc b{font-size:34px;font-weight:800;line-height:1}.rc span{font-size:12px;color:var(--mut)}
+.rc b{font-size:34px;font-weight:800;line-height:1;white-space:nowrap}.rc span{font-size:12px;color:var(--mut)}
 .ring{transform:rotate(-90deg);display:block}
 .hero .ring{filter:drop-shadow(0 0 14px rgba(139,123,255,.35))}
 .trk,.arc{fill:none;stroke-width:9}.trk{stroke:rgba(255,255,255,.09)}
@@ -85,7 +85,7 @@ background:var(--glass);border:1px solid var(--line);border-radius:20px;transiti
 .res.record{box-shadow:0 0 0 1px var(--a) inset,0 24px 70px -20px var(--a)}
 .tag{display:inline-block;padding:6px 14px;border-radius:999px;font-size:13px;font-weight:800;margin-bottom:14px;
 background:linear-gradient(135deg,var(--a),var(--b));color:#fff;box-shadow:0 8px 24px -8px var(--a)}
-.res .rw{margin:0 auto 14px}.res .rc b{font-size:46px}
+.res .rw{width:fit-content;margin:0 auto 14px}.res .rc b{font-size:46px}
 .res .ring{filter:drop-shadow(0 0 18px rgba(139,123,255,.3))}
 .res p{color:var(--mut);margin:10px 0 0}
 .btn{all:unset;box-sizing:border-box;display:block;width:100%;text-align:center;margin-top:12px;padding:16px;cursor:pointer;font-weight:800;
@@ -100,6 +100,22 @@ animation:burst var(--t) cubic-bezier(.15,.55,.4,1) forwards}
 @keyframes burst{
  0%{opacity:1;transform:translate(-50%,-50%) rotate(0deg) translate(0,0)}
  100%{opacity:0;transform:translate(-50%,-50%) rotate(var(--r)) translate(var(--x),var(--y))}}
+
+/* игра в память */
+.mwrap{display:flex;flex-direction:column;gap:14px;padding:18px;border-radius:40px;color:#fff;
+background:linear-gradient(160deg,var(--a),var(--b));box-shadow:0 20px 70px -10px var(--a)}
+.mtop{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.mtop b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap}
+.mtop small{font-size:14px;font-weight:600;opacity:.85;text-align:right;min-width:0}
+.mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.mcell{all:unset;box-sizing:border-box;aspect-ratio:1;min-height:64px;border-radius:18px;background:rgba(255,255,255,.14);
+border:1px solid rgba(255,255,255,.25);cursor:pointer;transition:background .15s,transform .15s;display:grid;place-items:center}
+.mcell:active{transform:scale(.94)}
+.mcell.on{background:rgba(255,255,255,.95);transform:scale(1.07)}
+.mcell.ok{background:rgba(60,255,176,.7);border-color:transparent}
+.mcell.bad{background:rgba(255,64,64,.75);border-color:transparent}
+.mbar{height:6px;border-radius:6px;background:rgba(255,255,255,.2);overflow:hidden}
+.mbar i{display:block;height:100%;background:rgba(255,255,255,.95);transition:width .4s}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -153,6 +169,7 @@ const META = [
   { key:'reaction', title:'Реакция',        icon:'⚡', a:'#FF5C8A', b:'#FF9A5C', unit:'мс',    rule:'min', norm:v => (500 - v) / 350 },
   { key:'iq',       title:'IQ-тест',        icon:'🧠', a:'#8B7BFF', b:'#4FC3FF', unit:'IQ',    rule:'max', norm:v => (v - 70) / 70 },
   { key:'taps',     title:'Скорость тапов', icon:'👆', a:'#3CFFB0', b:'#3CB4FF', unit:'тап/с', rule:'max', norm:v => v / 10 },
+  { key:'memory',   title:'Память',         icon:'🎴', a:'#FFD34D', b:'#FF7A3D', unit:'из 10', rule:'max', norm:v => v / 10 },
 ];
 
 const ring = (p, a, b, size) => {
@@ -195,7 +212,7 @@ function renderList(){
       <div class="rc"><b>${ns.length ? total : '—'}</b><span>из 100</span></div></div>
       <div><h2>Общий рейтинг</h2><p>${ns.length === META.length ? 'Все тесты пройдены' : `Пройдено ${ns.length} из ${META.length}. Пройди все, чтобы получить полный рейтинг.`}</p></div></div>
     <div class="grid">${META.map((m, i) => { const r = best[m.key];
-      return `<button class="card ${m.key === 'reaction' ? 'wide' : ''}" data-k="${m.key}" style="--a:${m.a};--b:${m.b};animation-delay:${i*70}ms">
+      return `<button class="card ${(m.key === 'reaction' || m.key === 'memory') ? 'wide' : ''}" data-k="${m.key}" style="--a:${m.a};--b:${m.b};animation-delay:${i*70}ms">
         <span class="ic">${m.icon}</span><span class="t">${m.title}</span>
         <span class="v">${r ? r.v : '—'}<small>${m.unit}</small></span>
         <span class="pb"><i style="width:${r == null ? 0 : Math.round(clamp(m.norm(r.v))*100)}%"></i></span>
@@ -322,6 +339,54 @@ const TESTS = {
       });
     };
     ask();
+  },
+  memory(g){
+    const N = 12, TOTAL = 10, ON = 520, GAP = 160;
+    let r = 1, seq = [], pos = 0, phase = 'wait';
+    $('#stage').innerHTML = `<div class="mwrap" style="${padStyle('memory')}">
+      <div class="mtop"><b>Раунд 1 из ${TOTAL}</b><small id="ms">Приготовься…</small></div>
+      <div class="mgrid">${Array.from({length:N}, (_,i) => `<button class="mcell" data-i="${i}" aria-label="Карта ${i+1}"></button>`).join('')}</div>
+      <div class="mbar"><i id="mp" style="width:0%"></i></div></div>`;
+    const stat = t => { const el = document.getElementById('ms'); if (el) el.textContent = t; };
+    const prog = w => { const el = document.getElementById('mp'); if (el) el.style.width = w + '%'; };
+    const play = () => {
+      if (g !== gen) return;
+      phase = 'flash'; pos = 0;
+      document.querySelectorAll('.mcell').forEach(c => c.classList.remove('ok', 'bad'));
+      stat('Запоминай…');
+      seq = shuffle(Array.from({length:N}, (_,i) => i)).slice(0, r);
+      seq.forEach((ci, k) => setTimeout(() => {
+        if (g !== gen) return;
+        const el = document.querySelector(`.mcell[data-i="${ci}"]`);
+        if (!el) return;
+        el.classList.add('on');
+        setTimeout(() => { if (el.isConnected) el.classList.remove('on'); }, ON);
+      }, 400 + k * (ON + GAP)));
+      setTimeout(() => { if (g !== gen) return; phase = 'input'; stat('Повтори по порядку'); }, 400 + seq.length * (ON + GAP));
+    };
+    const endRound = () => {
+      if (g !== gen) return;
+      prog(Math.round(r / TOTAL * 100));
+      if (r >= TOTAL) { setTimeout(() => { if (g === gen) finish('memory', TOTAL, 'Фотографическая память!'); }, 650); return; }
+      stat('Верно!');
+      r++;
+      setTimeout(() => { if (g !== gen) return;
+        const t = document.querySelector('.mtop b'); if (t) t.textContent = `Раунд ${r} из ${TOTAL}`; play(); }, 850);
+    };
+    document.querySelectorAll('.mcell').forEach(el => el.onpointerdown = () => {
+      if (g !== gen || phase !== 'input') return;
+      const ci = +el.dataset.i;
+      if (ci === seq[pos]) {
+        pos++; haptic('impact', 'light'); el.classList.add('ok');
+        if (pos >= seq.length) { phase = 'wait'; endRound(); }
+      } else {
+        phase = 'wait'; haptic('notify', 'error'); el.classList.add('bad');
+        const done = r - 1;
+        const verdict = done >= 7 ? 'Почти идеально!' : done >= 4 ? 'Хорошая память' : 'Есть куда расти';
+        setTimeout(() => { if (g === gen) finish('memory', done, verdict); }, 650);
+      }
+    });
+    setTimeout(() => { if (g === gen) play(); }, 500);
   }
 };
 
