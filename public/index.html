@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0D0B22">
 <title>Проверь себя</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Onest:wght@500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0D0B22;--tx:#F2F0FF;--mut:rgba(242,240,255,.55);--glass:rgba(255,255,255,.07);--line:rgba(255,255,255,.12)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -17,21 +17,26 @@ body::before,body::after{content:"";position:fixed;z-index:-1;width:420px;height
 body::before{background:#6B4DFF;top:-140px;left:-120px}
 body::after{background:#FF3D8B;bottom:-160px;right:-140px;opacity:.4}
 main{max-width:480px;margin:0 auto}
-h1{font-size:30px;font-weight:800;letter-spacing:-.02em;margin:6px 4px 18px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:6px 4px 18px}
+h1{font-size:30px;font-weight:800;letter-spacing:-.02em;margin:0}
 h2{margin:0;font-size:20px;font-weight:800;letter-spacing:-.01em}
+.gear{all:unset;box-sizing:border-box;width:44px;height:44px;flex:none;display:grid;place-items:center;font-size:19px;cursor:pointer;
+background:var(--glass);border:1px solid var(--line);border-radius:16px;transition:transform .15s}
+.gear:active{transform:scale(.9) rotate(-15deg)}
 .glass{background:var(--glass);border:1px solid var(--line);border-radius:28px;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
-.hero{display:flex;align-items:center;gap:18px;padding:20px;margin-bottom:12px}
+.hero{display:flex;align-items:center;gap:18px;padding:20px;margin-bottom:12px;animation:cardIn .5s cubic-bezier(.2,.8,.2,1) backwards}
 .hero p{margin:4px 0 0;color:var(--mut);font-size:14px}
 .rw{position:relative;flex:none}
 .rc{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
 .rc b{font-size:34px;font-weight:800;line-height:1}.rc span{font-size:12px;color:var(--mut)}
 .ring{transform:rotate(-90deg);display:block}
 .trk,.arc{fill:none;stroke-width:9}.trk{stroke:rgba(255,255,255,.09)}
-.arc{stroke-linecap:round;stroke-dasharray:264;animation:fill 1.2s cubic-bezier(.2,.8,.2,1)}
+.arc{stroke-linecap:round;stroke-dasharray:264;animation:fill 1.1s cubic-bezier(.2,.8,.2,1)}
 @keyframes fill{from{stroke-dashoffset:264}}
+@keyframes cardIn{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .card{all:unset;box-sizing:border-box;position:relative;overflow:hidden;cursor:pointer;padding:16px;min-height:150px;display:flex;flex-direction:column;
-background:var(--glass);border:1px solid var(--line);border-radius:28px;transition:transform .15s}
+background:var(--glass);border:1px solid var(--line);border-radius:28px;transition:transform .15s;animation:cardIn .5s cubic-bezier(.2,.8,.2,1) backwards}
 .card::before{content:"";position:absolute;width:120px;height:120px;right:-40px;top:-40px;border-radius:50%;background:linear-gradient(135deg,var(--a),var(--b));opacity:.35;filter:blur(24px)}
 .card:active{transform:scale(.96)}.card:focus-visible{outline:2px solid var(--a)}
 .card.wide{grid-column:span 2;min-height:130px}
@@ -39,24 +44,30 @@ background:var(--glass);border:1px solid var(--line);border-radius:28px;transiti
 .card .t{margin-top:12px;font-weight:700;color:var(--mut);font-size:14px}
 .v{margin-top:auto;font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
 .v small{font-size:13px;font-weight:600;color:var(--mut);margin-left:5px;letter-spacing:0}
+.n{font-size:11px;color:var(--mut);margin-top:2px}
 .pb{height:6px;border-radius:6px;background:rgba(255,255,255,.1);margin-top:10px;overflow:hidden}
-.pb i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--a),var(--b))}
-.badge{margin-top:18px;font-size:12px;color:var(--mut);text-align:center}
+.pb i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--a),var(--b));transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.badge{margin-top:18px;font-size:12px;color:#3CFFB0;font-weight:700;text-align:center;min-height:16px}
 .pad{all:unset;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%;height:74vh;
 border-radius:40px;font-size:38px;font-weight:800;letter-spacing:-.02em;text-align:center;cursor:pointer;touch-action:manipulation;
-color:#fff;background:linear-gradient(160deg,var(--a),var(--b));box-shadow:0 20px 70px -10px var(--a)}
+color:#fff;background:linear-gradient(160deg,var(--a),var(--b));box-shadow:0 20px 70px -10px var(--a);transition:filter .15s}
+.pad:active{filter:brightness(.92)}
 .pad small{font-size:15px;font-weight:500;opacity:.8;letter-spacing:0}
-.q{font-size:25px;font-weight:800;line-height:1.25;letter-spacing:-.01em;margin:14px 4px 20px}
+.q{font-size:25px;font-weight:800;line-height:1.25;letter-spacing:-.01em;margin:14px 4px 20px;animation:cardIn .35s cubic-bezier(.2,.8,.2,1)}
 .opt{all:unset;box-sizing:border-box;display:block;width:100%;padding:17px 18px;margin-bottom:10px;cursor:pointer;font-weight:700;
-background:var(--glass);border:1px solid var(--line);border-radius:20px}
-.opt:active{background:linear-gradient(135deg,var(--a),var(--b))}
+background:var(--glass);border:1px solid var(--line);border-radius:20px;transition:background .2s,transform .15s}
+.opt:active{transform:scale(.98)}
 .bar{height:6px;border-radius:6px;background:rgba(255,255,255,.1);overflow:hidden}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--a),var(--b));transition:width .3s}
-.res{text-align:center;padding:32px 20px 28px}
+.res{text-align:center;padding:32px 20px 28px;animation:cardIn .45s cubic-bezier(.2,.8,.2,1)}
+.res.record{box-shadow:0 0 0 1px var(--a) inset,0 24px 70px -20px var(--a)}
+.tag{display:inline-block;padding:6px 14px;border-radius:999px;font-size:13px;font-weight:800;margin-bottom:14px;
+background:linear-gradient(135deg,var(--a),var(--b));color:#fff}
 .res .rw{margin:0 auto 14px}.res .rc b{font-size:46px}
 .res p{color:var(--mut);margin:10px 0 0}
 .btn{all:unset;box-sizing:border-box;display:block;width:100%;text-align:center;margin-top:12px;padding:16px;cursor:pointer;font-weight:800;
-border-radius:20px;background:var(--glass);border:1px solid var(--line)}
+border-radius:20px;background:var(--glass);border:1px solid var(--line);transition:transform .15s}
+.btn:active{transform:scale(.98)}
 .btn.main{background:var(--tx);color:var(--bg);border-color:transparent}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -64,7 +75,7 @@ border-radius:20px;background:var(--glass);border:1px solid var(--line)}
 <body>
 <main>
   <section id="home">
-    <h1 id="hello">Привет!</h1>
+    <div class="top"><h1 id="hello">Привет!</h1><button class="gear" id="reset" aria-label="Сбросить прогресс">⚙️</button></div>
     <div id="list"></div>
     <div class="badge" id="badge"></div>
   </section>
@@ -75,6 +86,7 @@ border-radius:20px;background:var(--glass);border:1px solid var(--line)}
 const tg = Telegram.WebApp; tg.ready(); tg.expand();
 try { tg.setHeaderColor('#0D0B22'); tg.setBackgroundColor('#0D0B22'); } catch {}
 const $ = s => document.querySelector(s);
+const haptic = (type, style) => { try { type === 'notify' ? tg.HapticFeedback?.notificationOccurred(style) : tg.HapticFeedback?.impactOccurred(style); } catch {} };
 
 // initDataUnsafe — только для показа имени. Доверенная проверка идёт на сервере (/api/verify).
 $('#hello').textContent = 'Привет, ' + (tg.initDataUnsafe?.user?.first_name || 'гость');
@@ -84,8 +96,12 @@ const parse = s => { try { return JSON.parse(s) || {}; } catch { return {}; } };
 let best = {};
 const load = cb => cloud ? tg.CloudStorage.getItem('best', (e, v) => cb(parse(v))) : cb(parse(localStorage.getItem('best')));
 const save = () => { const s = JSON.stringify(best); cloud ? tg.CloudStorage.setItem('best', s) : (() => { try { localStorage.setItem('best', s); } catch {} })(); };
+// поддержка старого формата данных (best[key] был просто числом)
+const normalize = raw => { const out = {}; META.forEach(m => { const r = raw[m.key]; if (r == null) return;
+  out[m.key] = (typeof r === 'object' && r.v != null) ? { v: r.v, n: r.n || 1 } : { v: r, n: 1 }; }); return out; };
 
 const clamp = x => Math.max(0, Math.min(1, x));
+const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const META = [
   { key:'reaction', title:'Реакция',        icon:'⚡', a:'#FF5C8A', b:'#FF9A5C', unit:'мс',    rule:'min', norm:v => (500 - v) / 350 },
   { key:'iq',       title:'IQ-тест',        icon:'🧠', a:'#8B7BFF', b:'#4FC3FF', unit:'IQ',    rule:'max', norm:v => (v - 70) / 70 },
@@ -102,22 +118,38 @@ function countUp(el, to, dec = 0){
   (function f(t){ const k = clamp((t - t0) / 900), e = 1 - Math.pow(1 - k, 3);
     el.textContent = (to * e).toFixed(dec); if (k < 1) requestAnimationFrame(f); })(t0);
 }
+async function shareResult(text){
+  try {
+    await navigator.clipboard.writeText(text);
+    haptic('notify', 'success');
+    tg.showPopup ? tg.showPopup({ message: 'Скопировано! Вставь в любой чат.' }) : alert('Скопировано!');
+  } catch {
+    tg.showPopup ? tg.showPopup({ message: text }) : alert(text);
+  }
+}
 
 function renderList(){
-  const ns = META.filter(m => best[m.key] != null).map(m => clamp(m.norm(best[m.key])));
+  const ns = META.filter(m => best[m.key] != null).map(m => clamp(m.norm(best[m.key].v)));
   const total = ns.length ? Math.round(ns.reduce((a, b) => a + b) / ns.length * 100) : 0;
   $('#list').innerHTML = `
     <div class="glass hero"><div class="rw">${ring(total/100, '#8B7BFF', '#FF5C8A', 118)}
       <div class="rc"><b>${ns.length ? total : '—'}</b><span>из 100</span></div></div>
-      <div><h2>Общий рейтинг</h2><p>${ns.length === 3 ? 'Все тесты пройдены' : `Пройдено ${ns.length} из ${META.length}. Пройди все, чтобы получить полный рейтинг.`}</p></div></div>
-    <div class="grid">${META.map(m => { const v = best[m.key];
-      return `<button class="card ${m.key === 'reaction' ? 'wide' : ''}" data-k="${m.key}" style="--a:${m.a};--b:${m.b}">
+      <div><h2>Общий рейтинг</h2><p>${ns.length === META.length ? 'Все тесты пройдены' : `Пройдено ${ns.length} из ${META.length}. Пройди все, чтобы получить полный рейтинг.`}</p></div></div>
+    <div class="grid">${META.map((m, i) => { const r = best[m.key];
+      return `<button class="card ${m.key === 'reaction' ? 'wide' : ''}" data-k="${m.key}" style="--a:${m.a};--b:${m.b};animation-delay:${i*70}ms">
         <span class="ic">${m.icon}</span><span class="t">${m.title}</span>
-        <span class="v">${v ?? '—'}<small>${m.unit}</small></span>
-        <span class="pb"><i style="width:${v == null ? 0 : Math.round(clamp(m.norm(v))*100)}%"></i></span></button>`; }).join('')}</div>`;
-  document.querySelectorAll('.card').forEach(b => b.onclick = () => { show('stage'); TESTS[b.dataset.k](); });
+        <span class="v">${r ? r.v : '—'}<small>${m.unit}</small></span>
+        <span class="pb"><i style="width:${r == null ? 0 : Math.round(clamp(m.norm(r.v))*100)}%"></i></span>
+        ${r ? `<span class="n">Попыток: ${r.n}</span>` : ''}</button>`; }).join('')}</div>`;
+  document.querySelectorAll('.card').forEach(b => b.onclick = () => { haptic('impact', 'light'); show('stage'); TESTS[b.dataset.k](); });
 }
-load(v => { best = v; renderList(); });
+load(v => { best = normalize(v); renderList(); });
+
+$('#reset').onclick = () => {
+  const doReset = () => { best = {}; save(); renderList(); haptic('notify', 'success'); };
+  if (tg.showConfirm) tg.showConfirm('Сбросить весь прогресс? Это действие необратимо.', ok => { if (ok) doReset(); });
+  else if (confirm('Сбросить весь прогресс?')) doReset();
+};
 
 function show(v){
   $('#home').hidden = v !== 'home'; $('#stage').hidden = v === 'home';
@@ -130,14 +162,25 @@ tg.BackButton.onClick(() => show('home'));
 const accent = m => `--a:${m.a};--b:${m.b}`;
 function finish(key, value, verdict){
   const m = META.find(x => x.key === key);
-  if (best[key] == null || (m.rule === 'max' ? value > best[key] : value < best[key])) { best[key] = value; save(); }
-  tg.HapticFeedback?.notificationOccurred('success');
-  $('#stage').innerHTML = `<div class="glass res" style="${accent(m)}"><div class="rw">${ring(m.norm(value), m.a, m.b, 190)}
-    <div class="rc"><b id="cnt">0</b><span>${m.unit}</span></div></div><h2>${verdict}</h2>
-    <p>${best[key] === value ? 'Твой лучший результат' : 'Лучший: ' + best[key] + ' ' + m.unit}</p></div>
-    <button class="btn main" id="again">Ещё раз</button><button class="btn" id="back">Назад</button>`;
+  const prev = best[key];
+  const isRecord = !prev || (m.rule === 'max' ? value > prev.v : value < prev.v);
+  best[key] = { v: isRecord ? value : prev.v, n: (prev?.n || 0) + 1 };
+  save();
+  haptic('notify', isRecord ? 'success' : 'warning');
+  const shareText = `🏆 Мой результат в тесте «${m.title}»: ${value}${m.unit}. Попробуй побить!`;
+  $('#stage').innerHTML = `<div class="glass res ${isRecord ? 'record' : ''}" style="${accent(m)}">
+    ${isRecord ? '<span class="tag">🏆 Новый рекорд</span>' : ''}
+    <div class="rw">${ring(m.norm(value), m.a, m.b, 190)}<div class="rc"><b id="cnt">0</b><span>${m.unit}</span></div></div>
+    <h2>${verdict}</h2>
+    <p>${isRecord ? 'Ты побил свой предыдущий рекорд' : 'Лучший результат: ' + best[key].v + ' ' + m.unit}</p>
+    <p style="opacity:.6;font-size:12px;margin-top:6px">Попыток: ${best[key].n}</p></div>
+    <button class="btn main" id="again">Ещё раз</button>
+    <button class="btn" id="share">Поделиться результатом</button>
+    <button class="btn" id="back">Назад</button>`;
   countUp($('#cnt'), value, key === 'taps' ? 1 : 0);
-  $('#again').onclick = () => TESTS[key](); $('#back').onclick = () => show('home');
+  $('#again').onclick = () => TESTS[key]();
+  $('#share').onclick = () => shareResult(shareText);
+  $('#back').onclick = () => show('home');
 }
 
 const padStyle = k => accent(META.find(m => m.key === k));
@@ -149,7 +192,8 @@ const TESTS = {
       const p = $('#p'); let ready = false;
       timer = setTimeout(() => { ready = true; p.style.cssText = '--a:#3CFFB0;--b:#3CB4FF'; p.innerHTML = 'Жми!'; t0 = performance.now(); }, 1000 + Math.random()*3000);
       p.onpointerdown = () => {
-        if (!ready){ clearTimeout(timer); p.style.cssText = '--a:#8B7BFF;--b:#4FC3FF'; p.innerHTML = 'Рано!<small>Тапни, чтобы повторить раунд</small>'; p.onpointerdown = round; return; }
+        if (!ready){ clearTimeout(timer); haptic('notify', 'error'); p.style.cssText = '--a:#8B7BFF;--b:#4FC3FF'; p.innerHTML = 'Рано!<small>Тапни, чтобы повторить раунд</small>'; p.onpointerdown = round; return; }
+        haptic('impact', 'medium');
         t.push(performance.now() - t0);
         if (++n < 3) return round();
         const v = Math.round(t.reduce((a, b) => a + b) / 3);
@@ -159,34 +203,45 @@ const TESTS = {
     round();
   },
   taps(){
-    let n = 0, on = false;
-    $('#stage').innerHTML = `<button class="pad" id="p" style="${padStyle('taps')}">Жми!<small>Отсчёт с первого тапа</small></button>`;
-    const p = $('#p');
+    const DUR = 10; let n = 0, on = false, left = DUR, iv;
+    $('#stage').innerHTML = `<button class="pad" id="p" style="${padStyle('taps')}"><span id="tn">0</span><small id="tl">Жми, чтобы начать отсчёт</small></button>`;
+    const p = $('#p'), tn = $('#tn'), tl = $('#tl');
     p.onpointerdown = () => {
-      p.innerHTML = ++n + '<small>тапов</small>';
+      tn.textContent = ++n; haptic('impact', 'light');
       if (on) return; on = true;
-      setTimeout(() => { p.onpointerdown = null; const v = +(n/10).toFixed(1);
-        finish('taps', v, v >= 8 ? 'Пальцы-пулемёты!' : v >= 5 ? 'Уверенный темп' : 'Разминка засчитана'); }, 10000);
+      tl.textContent = `Осталось ${left}с`;
+      iv = setInterval(() => { left--; tl.textContent = `Осталось ${left}с`; if (left <= 0) clearInterval(iv); }, 1000);
+      setTimeout(() => { p.onpointerdown = null; clearInterval(iv); const v = +(n/DUR).toFixed(1);
+        finish('taps', v, v >= 8 ? 'Пальцы-пулемёты!' : v >= 5 ? 'Уверенный темп' : 'Разминка засчитана'); }, DUR*1000);
     };
   },
   iq(){
-    const Q = [
-      ['2, 6, 18, 54, …?', ['108','162','148','216'], 1],
-      ['Книга — «читать», вилка — …', ['еда','резать','есть','металл'], 2],
-      ['Все розы — цветы. Некоторые цветы увядают. Значит, некоторые розы увядают?', ['Да','Нет','Нельзя сказать'], 2],
-      ['1, 1, 2, 3, 5, 8, …?', ['11','12','13','15'], 2],
-      ['5 машин делают 5 деталей за 5 минут. За сколько минут 100 машин сделают 100 деталей?', ['5','20','50','100'], 0],
-      ['Какое слово лишнее: яблоко, груша, морковь, слива?', ['яблоко','груша','морковь','слива'], 2],
+    const QPOOL = [
+      ['2, 6, 18, 54, …?', ['108','162','148','216'], '162'],
+      ['Книга — «читать», вилка — …', ['еда','резать','есть','металл'], 'есть'],
+      ['Все розы — цветы. Некоторые цветы увядают. Значит, некоторые розы увядают?', ['Да','Нет','Нельзя сказать'], 'Нельзя сказать'],
+      ['1, 1, 2, 3, 5, 8, …?', ['11','12','13','15'], '13'],
+      ['5 машин делают 5 деталей за 5 минут. За сколько минут 100 машин сделают 100 деталей?', ['5','20','50','100'], '5'],
+      ['Какое слово лишнее: яблоко, груша, морковь, слива?', ['яблоко','груша','морковь','слива'], 'морковь'],
+      ['Если сегодня понедельник, какой день будет через 100 дней?', ['Среда','Четверг','Пятница','Воскресенье'], 'Среда'],
+      ['Сколько будет 15% от 200?', ['20','30','40','50'], '30'],
+      ['Поезд едет со скоростью 60 км/ч. Сколько км он проедет за 45 минут?', ['30','40','45','50'], '45'],
     ];
+    const Q = shuffle(QPOOL).slice(0, 6).map(([q, opts, ans]) => [q, shuffle(opts), ans]);
     let i = 0, ok = 0;
     const ask = () => {
       $('#stage').innerHTML = `<div style="${padStyle('iq')}"><div class="bar"><i style="width:${i/Q.length*100}%"></i></div><p class="q">${Q[i][0]}</p>` +
-        Q[i][1].map((o, k) => `<button class="opt" data-k="${k}">${o}</button>`).join('') + '</div>';
+        Q[i][1].map(o => `<button class="opt" data-o="${o}">${o}</button>`).join('') + '</div>';
       document.querySelectorAll('.opt').forEach(b => b.onclick = () => {
-        if (+b.dataset.k === Q[i][2]) ok++;
-        if (++i < Q.length) return ask();
-        const v = Math.round(80 + ok*8.5);
-        finish('iq', v, `Верно ${ok} из ${Q.length}. ` + (v >= 120 ? 'Сильный результат!' : v >= 100 ? 'Твёрдая середина' : 'Есть куда расти'));
+        const correct = b.dataset.o === Q[i][2];
+        if (correct) ok++;
+        haptic('impact', correct ? 'light' : 'rigid');
+        document.querySelectorAll('.opt').forEach(x => { x.onclick = null; if (x.dataset.o === Q[i][2]) x.style.background = 'linear-gradient(135deg,#3CFFB0,#3CB4FF)'; });
+        if (!correct) b.style.background = 'linear-gradient(135deg,#FF5C8A,#FF9A5C)';
+        setTimeout(() => { if (++i < Q.length) return ask();
+          const v = Math.round(80 + ok*8.5);
+          finish('iq', v, `Верно ${ok} из ${Q.length}. ` + (v >= 120 ? 'Сильный результат!' : v >= 100 ? 'Твёрдая середина' : 'Есть куда расти'));
+        }, 500);
       });
     };
     ask();
