@@ -116,6 +116,21 @@ border:1px solid rgba(255,255,255,.25);cursor:pointer;transition:background .15s
 .mcell.bad{background:rgba(255,64,64,.75);border-color:transparent}
 .mbar{height:6px;border-radius:6px;background:rgba(255,255,255,.2);overflow:hidden}
 .mbar i{display:block;height:100%;background:rgba(255,255,255,.95);transition:width .4s}
+
+/* кнопка завершения и выбор уровня/возраста IQ */
+.exbtn{all:unset;box-sizing:border-box;display:block;width:100%;margin-top:12px;padding:13px;cursor:pointer;font-weight:700;font-size:15px;
+text-align:center;color:#fff;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.28);border-radius:16px;transition:transform .15s}
+.exbtn:active{transform:scale(.98)}
+.ilab{margin:16px 2px 8px;font-size:12px;font-weight:800;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;text-align:left}
+.ichips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:2px}
+.chip{all:unset;box-sizing:border-box;padding:9px 13px;border-radius:12px;cursor:pointer;font-weight:700;font-size:14px;
+background:var(--glass);border:1px solid var(--line);transition:transform .15s,background .2s}
+.chip:active{transform:scale(.94)}
+.chip.sel{background:linear-gradient(135deg,#8B7BFF,#4FC3FF);color:#fff;border-color:transparent}
+.opt.il{text-align:left;padding:14px 16px}
+.opt.il b{display:block;font-size:17px}
+.opt.il small{display:block;margin-top:3px;font-weight:600;color:var(--mut);font-size:12.5px}
+.opt.il.sel{background:linear-gradient(135deg,rgba(139,123,255,.28),rgba(79,195,255,.28));border-color:#8B7BFF}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -164,6 +179,10 @@ const normalize = raw => { const out = {}; META.forEach(m => { const r = raw[m.k
   out[m.key] = (typeof r === 'object' && r.v != null) ? { v: r.v, n: r.n || 1 } : { v: r, n: 1 }; }); return out; };
 
 const clamp = x => Math.max(0, Math.min(1, x));
+const erf = x => { const a = Math.abs(x), t = 1 / (1 + 0.3275911 * a);
+  const p = t * (0.254829592 + t * (-0.284496736 + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429))));
+  const y = 1 - p * Math.exp(-a * a);
+  return x < 0 ? -y : y; };
 const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const META = [
   { key:'reaction', title:'Реакция',        icon:'⚡', a:'#FF5C8A', b:'#FF9A5C', unit:'мс',    rule:'min', norm:v => (500 - v) / 350 },
@@ -202,6 +221,18 @@ function confetti(colors){
   }
   document.body.appendChild(fx);
   setTimeout(() => fx.remove(), 1900);
+}
+
+function wireExit(g){
+  const b = document.getElementById('exit');
+  if (!b) return;
+  b.onclick = () => {
+    if (g !== gen) return;
+    const quit = () => { gen++; show('home'); };
+    const msg = 'Завершить тест? Результат не будет сохранён.';
+    if (tg.showConfirm) tg.showConfirm(msg, ok => { if (ok) quit(); });
+    else if (confirm(msg)) quit();
+  };
 }
 
 function renderList(){
@@ -278,7 +309,8 @@ const TESTS = {
   reaction(g){
     const t = []; let n = 0, t0, timer;
     const round = () => {
-      $('#stage').innerHTML = `<button class="pad" id="p" style="${padStyle('reaction')}">Жди зелёного<small>Раунд ${n+1} из 3</small></button>`;
+      $('#stage').innerHTML = `<button class="pad" id="p" style="${padStyle('reaction')}">Жди зелёного<small>Раунд ${n+1} из 3</small></button><button class="exbtn" id="exit">Завершить</button>`;
+      wireExit(g);
       const p = $('#p'); let ready = false;
       timer = setTimeout(() => { if (g !== gen) return; ready = true; p.style.cssText = '--a:#3CFFB0;--b:#3CB4FF'; p.innerHTML = 'Жми!'; t0 = performance.now(); }, 1000 + Math.random()*3000);
       p.onpointerdown = () => {
@@ -295,7 +327,8 @@ const TESTS = {
   },
   taps(g){
     const DUR = 10; let n = 0, on = false, left = DUR, iv;
-    $('#stage').innerHTML = `<button class="pad" id="p" style="${padStyle('taps')}"><span id="tn">0</span><small id="tl">Жми, чтобы начать отсчёт</small></button>`;
+    $('#stage').innerHTML = `<button class="pad" id="p" style="${padStyle('taps')}"><span id="tn">0</span><small id="tl">Жми, чтобы начать отсчёт</small></button><button class="exbtn" id="exit">Завершить</button>`;
+    wireExit(g);
     const p = $('#p'), tn = $('#tn'), tl = $('#tl');
     p.onpointerdown = () => {
       if (g !== gen) return;
@@ -308,45 +341,111 @@ const TESTS = {
     };
   },
   iq(g){
-    const QPOOL = [
-      ['2, 6, 18, 54, …?', ['108','162','148','216'], '162'],
-      ['Книга — «читать», вилка — …', ['еда','резать','есть','металл'], 'есть'],
-      ['Все розы — цветы. Некоторые цветы увядают. Значит, некоторые розы увядают?', ['Да','Нет','Нельзя сказать'], 'Нельзя сказать'],
-      ['1, 1, 2, 3, 5, 8, …?', ['11','12','13','15'], '13'],
-      ['5 машин делают 5 деталей за 5 минут. За сколько минут 100 машин сделают 100 деталей?', ['5','20','50','100'], '5'],
-      ['Какое слово лишнее: яблоко, груша, морковь, слива?', ['яблоко','груша','морковь','слива'], 'морковь'],
-      ['Если сегодня понедельник, какой день будет через 100 дней?', ['Среда','Четверг','Пятница','Воскресенье'], 'Среда'],
-      ['Сколько будет 15% от 200?', ['20','30','40','50'], '30'],
-      ['Поезд едет со скоростью 60 км/ч. Сколько км он проедет за 45 минут?', ['30','40','45','50'], '45'],
+    // Пул вопросов: [вопрос, варианты, ответ, возрастная норма (годы)]
+    const POOL = [
+      ['Сколько будет 7 × 8?', ['54','56','58','64'], '56', 9],
+      ['Продолжи: 5, 10, 15, 20, …?', ['24','25','30','35'], '25', 9],
+      ['Что тяжелее: килограмм пуха или килограмм железа?', ['Пух','Железо','Одинаково','Зависит от объёма'], 'Одинаково', 9],
+      ['Сколько минут в полутора часах?', ['80','85','90','100'], '90', 10],
+      ['Какое слово лишнее: весы, грусть, радость, скука?', ['весы','грусть','радость','скука'], 'весы', 10],
+      ['Сколько будет 2 + 2 × 2?', ['4','6','8','12'], '6', 11],
+      ['2, 4, 8, 16, …?', ['20','24','30','32'], '32', 12],
+      ['Сколько будет 25% от 80?', ['15','20','25','40'], '20', 12],
+      ['Врач — «лечит», судья — …', ['судит','решает','приговаривает','обвиняет'], 'судит', 12],
+      ['Если 3 кошки ловят 3 мыши за 3 минуты, сколько кошек поймают 100 мышей за 100 минут?', ['3','33','100','Нельзя определить'], '3', 13],
+      ['Сколько будет 15% от 200?', ['20','30','40','50'], '30', 13],
+      ['Поезд едет со скоростью 60 км/ч. Сколько км он проедет за 45 минут?', ['30','40','45','50'], '45', 13],
+      ['Все берёзы — деревья. Некоторые деревья желтеют осенью. Значит, некоторые берёзы желтеют осенью?', ['Да','Нет','Нельзя утверждать','Только жёлтые'], 'Нельзя утверждать', 14],
+      ['1, 1, 2, 3, 5, 8, …?', ['11','12','13','15'], '13', 14],
+      ['Книга — «читать», вилка — …', ['еда','резать','есть','металл'], 'есть', 14],
+      ['У фермера было 9 овец, все, кроме семи, убежали. Сколько овец осталось?', ['2','7','9','16'], '7', 15],
+      ['Какое слово лишнее: яблоко, груша, морковь, слива?', ['яблоко','груша','морковь','слива'], 'морковь', 15],
+      ['Если сегодня понедельник, какой день будет через 100 дней?', ['Среда','Четверг','Пятница','Воскресенье'], 'Среда', 15],
+      ['Сколько диагоналей у выпуклого пятиугольника?', ['3','4','5','6'], '5', 15],
+      ['Половина от половины некоторого числа равна 8. Что это за число?', ['16','24','32','64'], '32', 16],
+      ['5 машин делают 5 деталей за 5 минут. За сколько минут 100 машин сделают 100 деталей?', ['5','20','50','100'], '5', 16],
+      ['Врач назначил 3 таблетки — по одной каждые полчаса. На сколько времени хватит таблеток?', ['Полчаса','Час','Полтора часа','Два часа'], 'Час', 16],
+      ['Все розы — цветы. Некоторые цветы увядают. Значит, некоторые розы увядают?', ['Да','Нет','Нельзя сказать','Все розы'], 'Нельзя сказать', 16],
+      ['2, 6, 18, 54, …?', ['108','148','162','216'], '162', 16],
+      ['Кувшинка каждый день удваивает площадь и за 48 дней покрывает всё озеро. За сколько дней она покроет половину озера?', ['24','36','47','48'], '47', 17],
+      ['Некоторые коты — Барсики. Все Барсики любят молоко. Значит, некоторые коты любят молоко?', ['Да','Нет','Нельзя сказать','Только Барсики'], 'Да', 17],
+      ['Что длиннее: три километра или 3000 сантиметров, умноженных на сто?', ['Равны','Три километра','3000 см × 100','Нельзя сравнить'], 'Равны', 17],
+      ['3, 7, 16, 35, …?', ['70','72','74','76'], '74', 18],
+      ['Чему равна сумма внутренних углов выпуклого шестиугольника?', ['540°','720°','900°','1080°'], '720°', 18],
+      ['Три механика чинят 3 машины за 4 часа. Сколько часов нужно шести механикам, чтобы починить 6 таких же машин?', ['2','4','6','8'], '4', 18],
     ];
-    const Q = shuffle(QPOOL).slice(0, 6).map(([q, opts, ans]) => { const o = shuffle(opts); return { q, o, ai: o.indexOf(ans) }; });
-    let i = 0, ok = 0;
-    const ask = () => {
+    const AGES = [
+      { t:'8', v:8 }, { t:'9', v:9 }, { t:'10', v:10 }, { t:'11', v:11 }, { t:'12', v:12 },
+      { t:'13', v:13 }, { t:'14', v:14 }, { t:'15', v:15 },
+      { t:'16–24', v:20 }, { t:'25–34', v:30 }, { t:'35–44', v:40 },
+      { t:'45–54', v:50 }, { t:'55–64', v:60 }, { t:'65+', v:70 }
+    ];
+    const BINS = [[9,10],[11,12],[13,14],[15,16],[17,18]];
+    let level = 0, ageIdx = -1;
+    const intro = () => {
       if (g !== gen) return;
-      $('#stage').innerHTML = `<div style="${padStyle('iq')}"><div class="bar"><i style="width:${i/Q.length*100}%"></i></div><p class="q">${Q[i].q}</p>` +
-        Q[i].o.map((o, j) => `<button class="opt" style="animation-delay:${j*40}ms" data-j="${j}">${o}</button>`).join('') + '</div>';
-      document.querySelectorAll('.opt').forEach(b => b.onclick = () => {
-        if (g !== gen) return;
-        const correct = +b.dataset.j === Q[i].ai;
-        if (correct) ok++;
-        haptic('impact', correct ? 'light' : 'rigid');
-        document.querySelectorAll('.opt').forEach(x => { x.onclick = null; if (+x.dataset.j === Q[i].ai) x.style.background = 'linear-gradient(135deg,#3CFFB0,#3CB4FF)'; });
-        if (!correct) b.style.background = 'linear-gradient(135deg,#FF5C8A,#FF9A5C)';
-        setTimeout(() => { if (g !== gen) return; if (++i < Q.length) return ask();
-          const v = Math.round(80 + ok*8.5);
-          finish('iq', v, `Верно ${ok} из ${Q.length}. ` + (v >= 120 ? 'Сильный результат!' : v >= 100 ? 'Твёрдая середина' : 'Есть куда расти'));
-        }, 500);
-      });
+      const ready = level && ageIdx >= 0;
+      $('#stage').innerHTML = `<div class="glass res" style="--a:#8B7BFF;--b:#4FC3FF">
+        <h2>IQ-тест</h2>
+        <p style="margin-top:8px">Норма зависит от возраста: до 15 лет — IQ по ментальному возрасту (шкала Бине, 1911), с 16 лет — отклонение от среднего 100 при σ = 15 (шкала Векслера).</p>
+        <div class="ilab">Уровень</div>
+        <button class="opt il ${level === 10 ? 'sel' : ''}" data-l="10"><b>Базовый</b><small>10 вопросов · быстрая оценка</small></button>
+        <button class="opt il ${level === 26 ? 'sel' : ''}" data-l="26"><b>Точный</b><small>26 вопросов · оценка с точностью до 5 IQ</small></button>
+        <div class="ilab">Возраст</div>
+        <div class="ichips">${AGES.map((a, i) => `<button class="chip ${i === ageIdx ? 'sel' : ''}" data-i="${i}">${a.t}</button>`).join('')}</div>
+        <button class="btn main" id="go" ${ready ? '' : 'style="opacity:.4;pointer-events:none"'}>Начать</button>
+        <button class="exbtn" id="exit">Вернуться назад</button></div>`;
+      document.querySelectorAll('.opt.il').forEach(b => b.onclick = () => { if (g !== gen) return; level = +b.dataset.l; haptic('impact', 'light'); intro(); });
+      document.querySelectorAll('.chip').forEach(b => b.onclick = () => { if (g !== gen) return; ageIdx = +b.dataset.i; haptic('impact', 'light'); intro(); });
+      const goBtn = document.getElementById('go');
+      goBtn.onclick = () => { if (g !== gen || !ready) return; start(); };
+      wireExit(g);
     };
-    ask();
+    const start = () => {
+      if (g !== gen) return;
+      const need = level === 10 ? [2, 2, 2, 2, 2] : [5, 4, 5, 6, 6];
+      const picked = BINS.flatMap((r, i) => shuffle(POOL.filter(p => p[3] >= r[0] && p[3] <= r[1])).slice(0, need[i]));
+      const Q = picked.map(([q, opts, ans, age]) => { const o = shuffle(opts); return { q, o, ai: o.indexOf(ans), age }; }).sort((a, b) => a.age - b.age);
+      let i = 0; const res = [];
+      const done = () => {
+        if (g !== gen) return;
+        const ma = Math.round(Math.max(5, 6 + 2 * res.reduce((s, r) => s + (r.ok ? 1 : 0.15) * (r.age - 6), 0) / res.length) * 10) / 10;
+        const age = AGES[ageIdx].v;
+        const raw = age <= 15 ? ma / age * 100 : 100 + (ma - 17) * 11;
+        const v = Math.max(55, Math.min(165, Math.round(raw)));
+        const pct = Math.max(1, Math.min(99, Math.round((0.5 + 0.5 * erf((v - 100) / 15 / Math.SQRT2)) * 100)));
+        const band = v >= 130 ? 'Очень высокий' : v >= 120 ? 'Высокий' : v >= 110 ? 'Выше среднего' : v >= 90 ? 'Средний' : v >= 80 ? 'Ниже среднего' : v >= 70 ? 'Низкий' : 'Очень низкий';
+        finish('iq', v, `${band}. Ментальный возраст ~${ma} лет`);
+      };
+      const ask = () => {
+        if (g !== gen) return;
+        $('#stage').innerHTML = `<div style="${padStyle('iq')}"><div class="bar"><i style="width:${i / Q.length * 100}%"></i></div><p class="q">${Q[i].q}</p>` +
+          Q[i].o.map((o, j) => `<button class="opt" style="animation-delay:${j * 40}ms" data-j="${j}">${o}</button>`).join('') +
+          `<button class="exbtn" id="exit">Завершить</button></div>`;
+        wireExit(g);
+        document.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+          if (g !== gen) return;
+          const correct = +b.dataset.j === Q[i].ai;
+          res.push({ age: Q[i].age, ok: correct });
+          haptic('impact', correct ? 'light' : 'rigid');
+          document.querySelectorAll('.opt').forEach(x => { x.onclick = null; if (+x.dataset.j === Q[i].ai) x.style.background = 'linear-gradient(135deg,#3CFFB0,#3CB4FF)'; });
+          if (!correct) b.style.background = 'linear-gradient(135deg,#FF5C8A,#FF9A5C)';
+          setTimeout(() => { if (g !== gen) return; if (++i < Q.length) return ask(); done(); }, 500);
+        });
+      };
+      ask();
+    };
+    intro();
   },
+
   memory(g){
     const N = 12, TOTAL = 10, ON = 520, GAP = 160;
     let r = 1, seq = [], pos = 0, phase = 'wait';
     $('#stage').innerHTML = `<div class="mwrap" style="${padStyle('memory')}">
       <div class="mtop"><b>Раунд 1 из ${TOTAL}</b><small id="ms">Приготовься…</small></div>
       <div class="mgrid">${Array.from({length:N}, (_,i) => `<button class="mcell" data-i="${i}" aria-label="Карта ${i+1}"></button>`).join('')}</div>
-      <div class="mbar"><i id="mp" style="width:0%"></i></div></div>`;
+      <div class="mbar"><i id="mp" style="width:0%"></i></div></div><button class="exbtn" id="exit">Завершить</button>`;
+    wireExit(g);
     const stat = t => { const el = document.getElementById('ms'); if (el) el.textContent = t; };
     const prog = w => { const el = document.getElementById('mp'); if (el) el.style.width = w + '%'; };
     const play = () => {
