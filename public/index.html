@@ -203,8 +203,16 @@ function renderList(){
   document.querySelectorAll('.card').forEach(b => b.onclick = () => startTest(b.dataset.k));
 }
 
+load(v => { best = normalize(v); renderList(); });
+
 // защита от «протухших» таймеров: любая навигация/старт теста увеличивает gen,
 // и колбэки из предыдущего экрана просто ничего не делают
+$('#reset').onclick = () => {
+  const doReset = () => { best = {}; save(); renderList(); haptic('notify', 'success'); };
+  if (tg.showConfirm) tg.showConfirm('Сбросить весь прогресс? Это действие необратимо.', ok => { if (ok) doReset(); });
+  else if (confirm('Сбросить весь прогресс?')) doReset();
+};
+
 let gen = 0;
 function startTest(k){
   const g = ++gen;
