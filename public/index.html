@@ -143,6 +143,12 @@ background:var(--glass);border:1px solid var(--line);transition:transform .15s,b
 .opt.il b{display:block;font-size:17px}
 .opt.il small{display:block;margin-top:3px;font-weight:600;color:var(--mut);font-size:12.5px}
 .opt.il.sel{background:linear-gradient(135deg,rgba(139,123,255,.28),rgba(79,195,255,.28));border-color:#8B7BFF}
+.mxgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px auto;max-width:280px}
+.mxcell{aspect-ratio:1;border-radius:16px;background:var(--glass);border:1px solid var(--line);display:grid;place-items:center;overflow:hidden}
+.mxcell.q{font-size:28px;font-weight:800;color:var(--mut)}
+.shopts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:4px}
+.shopt{all:unset;box-sizing:border-box;aspect-ratio:1;border-radius:16px;background:var(--glass);border:1px solid var(--line);display:grid;place-items:center;cursor:pointer;transition:transform .15s;animation:cardIn .3s cubic-bezier(.2,.8,.2,1) backwards}
+.shopt:active{transform:scale(.94)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -365,47 +371,36 @@ const TESTS = {
     };
   },
   iq(g){
-    // Пул вопросов: [вопрос, варианты, ответ, возрастная норма (годы)]
-    const POOL = [
-      ['Сколько будет 7 × 8?', ['54','56','58','64'], '56', 9],
-      ['Продолжи: 5, 10, 15, 20, …?', ['24','25','30','35'], '25', 9],
-      ['Что тяжелее: килограмм пуха или килограмм железа?', ['Пух','Железо','Одинаково','Зависит от объёма'], 'Одинаково', 9],
-      ['Сколько минут в полутора часах?', ['80','85','90','100'], '90', 10],
-      ['Какое слово лишнее: весы, грусть, радость, скука?', ['весы','грусть','радость','скука'], 'весы', 10],
-      ['Сколько будет 2 + 2 × 2?', ['4','6','8','12'], '6', 11],
-      ['2, 4, 8, 16, …?', ['20','24','30','32'], '32', 12],
-      ['Сколько будет 25% от 80?', ['15','20','25','40'], '20', 12],
-      ['Врач — «лечит», судья — …', ['судит','решает','приговаривает','обвиняет'], 'судит', 12],
-      ['Если 3 кошки ловят 3 мыши за 3 минуты, сколько кошек поймают 100 мышей за 100 минут?', ['3','33','100','Нельзя определить'], '3', 13],
-      ['Сколько будет 15% от 200?', ['20','30','40','50'], '30', 13],
-      ['Поезд едет со скоростью 60 км/ч. Сколько км он проедет за 45 минут?', ['30','40','45','50'], '45', 13],
-      ['Все берёзы — деревья. Некоторые деревья желтеют осенью. Значит, некоторые берёзы желтеют осенью?', ['Да','Нет','Нельзя утверждать','Только жёлтые'], 'Нельзя утверждать', 14],
-      ['1, 1, 2, 3, 5, 8, …?', ['11','12','13','15'], '13', 14],
-      ['Книга — «читать», вилка — …', ['еда','резать','есть','металл'], 'есть', 14],
-      ['У фермера было 9 овец, все, кроме семи, убежали. Сколько овец осталось?', ['2','7','9','16'], '7', 15],
-      ['Какое слово лишнее: яблоко, груша, морковь, слива?', ['яблоко','груша','морковь','слива'], 'морковь', 15],
-      ['Если сегодня понедельник, какой день будет через 100 дней?', ['Среда','Четверг','Пятница','Воскресенье'], 'Среда', 15],
-      ['Сколько диагоналей у выпуклого пятиугольника?', ['3','4','5','6'], '5', 15],
-      ['Половина от половины некоторого числа равна 8. Что это за число?', ['16','24','32','64'], '32', 16],
-      ['5 машин делают 5 деталей за 5 минут. За сколько минут 100 машин сделают 100 деталей?', ['5','20','50','100'], '5', 16],
-      ['Врач назначил 3 таблетки — по одной каждые полчаса. На сколько времени хватит таблеток?', ['Полчаса','Час','Полтора часа','Два часа'], 'Час', 16],
-      ['Все розы — цветы. Некоторые цветы увядают. Значит, некоторые розы увядают?', ['Да','Нет','Нельзя сказать','Все розы'], 'Нельзя сказать', 16],
-      ['2, 6, 18, 54, …?', ['108','148','162','216'], '162', 16],
-      ['Кувшинка каждый день удваивает площадь и за 48 дней покрывает всё озеро. За сколько дней она покроет половину озера?', ['24','36','47','48'], '47', 17],
-      ['Некоторые коты — Барсики. Все Барсики любят молоко. Значит, некоторые коты любят молоко?', ['Да','Нет','Нельзя сказать','Только Барсики'], 'Да', 17],
-      ['Что длиннее: три километра или 3000 сантиметров, умноженных на сто?', ['Равны','Три километра','3000 см × 100','Нельзя сравнить'], 'Равны', 17],
-      ['3, 7, 16, 35, …?', ['70','72','74','76'], '74', 18],
-      ['Чему равна сумма внутренних углов выпуклого шестиугольника?', ['540°','720°','900°','1080°'], '720°', 18],
-      ['Три механика чинят 3 машины за 4 часа. Сколько часов нужно шести механикам, чтобы починить 6 таких же машин?', ['2','4','6','8'], '4', 18],
-      ['Молоко — «пить», хлеб — …', ['резать','есть','печь','покупать'], 'есть', 9],
-      ['Какое слово лишнее: круг, квадрат, треугольник, красный?', ['круг','квадрат','треугольник','красный'], 'красный', 10],
-      ['У Маши было 20 конфет, она отдала половину брату и съела ещё 3. Сколько осталось?', ['7','10','13','17'], '7', 11],
+    const SH = ['circle','square','triangle','star'];
+    const COL = ['#8B7BFF','#FF5C8A','#3CFFB0','#FFD34D'];
+    const draw = (shape, r) => shape === 'circle' ? `<circle cx="30" cy="30" r="${r}"/>` :
+      shape === 'square' ? `<rect x="${30-r}" y="${30-r}" width="${r*2}" height="${r*2}"/>` :
+      shape === 'triangle' ? `<polygon points="30,${30-r} ${30+r*.87},${30+r*.5} ${30-r*.87},${30+r*.5}"/>` :
+      (() => { const p = []; for (let k = 0; k < 10; k++) { const a = Math.PI/5*k - Math.PI/2, rr = k%2 ? r*.45 : r; p.push(`${30+Math.cos(a)*rr},${30+Math.sin(a)*rr}`); } return `<polygon points="${p.join(' ')}"/>`; })();
+    const shapeSVG = (shape, color, rot) => `<svg viewBox="0 0 60 60" width="46" height="46"><g fill="${color}" transform="rotate(${rot} 30 30)">${draw(shape, 18)}</g></svg>`;
+    const same = (a, b) => a.shape === b.shape && a.color === b.color && a.rot === b.rot;
+
+    const genMatrix = hard => {
+      const shapes = shuffle(SH).slice(0, 3), colors = shuffle(COL).slice(0, 3), rots = hard ? [0, 120, 240] : [0, 0, 0];
+      const cell = (r, c) => ({ shape: shapes[(c + r) % 3], color: colors[(c + r * 2) % 3], rot: rots[(c + r) % 3] });
+      const correct = cell(2, 2), opts = [correct];
+      while (opts.length < 5) {
+        const cand = { shape: shapes[Math.floor(Math.random()*3)], color: colors[Math.floor(Math.random()*3)], rot: rots[Math.floor(Math.random()*3)] };
+        if (!opts.some(o => same(o, cand))) opts.push(cand);
+      }
+      return { cell, correct, opts: shuffle(opts) };
+    };
+
+    const NUM = [
       ['Продолжи ряд: 1, 4, 9, 16, 25, …?', ['30','32','36','49'], '36', 12],
-      ['Зима — «холодно», лето — …', ['снег','жарко','отпуск','дождь'], 'жарко', 13],
-      ['Переставь буквы в слове «сокол», чтобы получить другое слово', ['колос','сокол','лоток','кокос'], 'колос', 14],
-      ['В коробке 4 красных и 6 синих шаров. Какова вероятность вытащить красный (в долях)?', ['0.4','0.5','0.6','0.66'], '0.4', 15],
-      ['Если A старше B, а B старше C, то …', ['A старше C','C старше A','A и C ровесники','Нельзя определить'], 'A старше C', 16],
-      ['5 рабочих строят стену за 10 дней. За сколько дней 10 рабочих построят такую же стену?', ['2','5','10','20'], '5', 17],
+      ['2, 6, 18, 54, …?', ['108','148','162','216'], '162', 16],
+      ['1, 1, 2, 3, 5, 8, 13, …?', ['18','19','20','21'], '21', 14],
+      ['Сколько будет 15% от 200?', ['20','30','40','50'], '30', 13],
+    ];
+    const VRB = [
+      ['Врач — «лечит», судья — …', ['судит','решает','приговаривает','обвиняет'], 'судит', 9],
+      ['Какое слово лишнее: весы, грусть, радость, скука?', ['весы','грусть','радость','скука'], 'весы', 10],
+      ['Все розы — цветы. Некоторые цветы увядают. Значит, некоторые розы увядают?', ['Да','Нет','Нельзя сказать','Все розы'], 'Нельзя сказать', 16],
       ['Найди аналогию: Книга — Библиотека, как Картина — …', ['Художник','Музей','Рама','Кисть'], 'Музей', 18],
     ];
     const AGES = [
@@ -414,33 +409,26 @@ const TESTS = {
       { t:'16–24', v:20 }, { t:'25–34', v:30 }, { t:'35–44', v:40 },
       { t:'45–54', v:50 }, { t:'55–64', v:60 }, { t:'65+', v:70 }
     ];
-    const BINS = [[9,10],[11,12],[13,14],[15,16],[17,18]];
-    let level = 0, ageIdx = -1;
+    let ageIdx = -1;
     const intro = () => {
       if (g !== gen) return;
-      const ready = level && ageIdx >= 0;
       $('#stage').innerHTML = `<div class="glass res" style="--a:#8B7BFF;--b:#4FC3FF">
         <h2>IQ тест</h2>
-        <p style="margin-top:8px">40 вопросов в базе, реальная методика расчёта: до 15 лет — коэффициент по ментальному возрасту (шкала Бине), с 16 лет — стандартизированная оценка со средним 100 и σ = 15 (шкала Векслера). Погрешность результата ±5 баллов. Тест не является клинической диагностикой.</p>
-        <div class="ilab">Уровень</div>
-        <button class="opt il ${level === 10 ? 'sel' : ''}" data-l="10"><b>Базовый</b><small>10 вопросов · быстрая оценка</small></button>
-        <button class="opt il ${level === 26 ? 'sel' : ''}" data-l="26"><b>Точный</b><small>26 вопросов · оценка с точностью до 5 IQ</small></button>
+        <p style="margin-top:8px">Визуальные матрицы (невербальное мышление, в стиле прогрессивных матриц), числовые ряды, вербальные аналогии и тест скорости обработки — как в настоящих тестах. Методика: коэффициент по ментальному возрасту (шкала Бине) до 15 лет, стандартизированная оценка M=100 σ=15 (шкала Векслера) с 16 лет. Погрешность ±5. Не является клинической диагностикой.</p>
         <div class="ilab">Возраст</div>
         <div class="ichips">${AGES.map((a, i) => `<button class="chip ${i === ageIdx ? 'sel' : ''}" data-i="${i}">${a.t}</button>`).join('')}</div>
-        <button class="btn main" id="go" ${ready ? '' : 'style="opacity:.4;pointer-events:none"'}>Начать</button>
+        <button class="btn main" id="go" ${ageIdx >= 0 ? '' : 'style="opacity:.4;pointer-events:none"'}>Начать</button>
         <button class="exbtn" id="exit">Вернуться назад</button></div>`;
-      document.querySelectorAll('.opt.il').forEach(b => b.onclick = () => { if (g !== gen) return; level = +b.dataset.l; haptic('impact', 'light'); intro(); });
       document.querySelectorAll('.chip').forEach(b => b.onclick = () => { if (g !== gen) return; ageIdx = +b.dataset.i; haptic('impact', 'light'); intro(); });
-      const goBtn = document.getElementById('go');
-      goBtn.onclick = () => { if (g !== gen || !ready) return; start(); };
+      document.getElementById('go').onclick = () => { if (g !== gen || ageIdx < 0) return; start(); };
       wireExit(g, true);
     };
     const start = () => {
       if (g !== gen) return;
-      const need = level === 10 ? [2, 2, 2, 2, 2] : [5, 4, 5, 6, 6];
-      const picked = BINS.flatMap((r, i) => shuffle(POOL.filter(p => p[3] >= r[0] && p[3] <= r[1])).slice(0, need[i]));
-      const Q = picked.map(([q, opts, ans, age]) => { const o = shuffle(opts); return { q, o, ai: o.indexOf(ans), age }; }).sort((a, b) => a.age - b.age);
-      let i = 0; const res = [];
+      const M = [12, 12, 13, 15, 16, 16].map((age, k) => ({ type:'mx', age, hard: k >= 4, mx: genMatrix(k >= 4) }));
+      const txt = ([q, o, a, age]) => { const oo = shuffle(o); return { type:'txt', age, q, o: oo, ai: oo.indexOf(a) }; };
+      const Q = [...M, ...shuffle(NUM).map(txt), ...shuffle(VRB).map(txt)].sort((a, b) => a.age - b.age);
+      let i = 0; const res = []; const SN = 4; let spd = { ok:0 };
       const done = () => {
         if (g !== gen) return;
         const ma = Math.round(Math.max(5, 6 + 2 * res.reduce((s, r) => s + (r.ok ? 1 : 0.15) * (r.age - 6), 0) / res.length) * 10) / 10;
@@ -450,23 +438,62 @@ const TESTS = {
         const pct = Math.max(1, Math.min(99, Math.round((0.5 + 0.5 * erf((v - 100) / 15 / Math.SQRT2)) * 100)));
         const band = v >= 130 ? 'Очень высокий' : v >= 120 ? 'Высокий' : v >= 110 ? 'Выше среднего' : v >= 90 ? 'Средний' : v >= 80 ? 'Ниже среднего' : v >= 70 ? 'Пограничный' : 'Низкий';
         const extra = age <= 15 ? `Ментальный возраст ~${ma} лет.` : `Выше ${pct}% людей твоего возраста.`;
-        finish('iq', v, `${band}. ${extra} Погрешность ±5`);
+        finish('iq', v, `${band}. ${extra} Индекс скорости обработки: ${spd.ok}/${SN}. Погрешность ±5`);
+      };
+      const askSpeed = si => {
+        if (g !== gen) return;
+        if (si >= SN) return done();
+        const rnd = () => ({ shape: SH[Math.floor(Math.random()*4)], color: COL[Math.floor(Math.random()*4)], rot: [0,90,180,270][Math.floor(Math.random()*4)] });
+        const target = rnd(), opts = [target];
+        while (opts.length < 6) { const c = rnd(); if (!same(c, target)) opts.push(c); }
+        const sh = shuffle(opts);
+        $('#stage').innerHTML = `<div style="${padStyle('iq')}"><p class="q" style="font-size:18px">Скорость: раунд ${si+1} из ${SN}<br>Найди такую же фигуру</p>
+          <div class="mxgrid" style="grid-template-columns:1fr;max-width:110px"><div class="mxcell">${shapeSVG(target.shape,target.color,target.rot)}</div></div>
+          <div class="shopts">${sh.map(o => `<button class="shopt">${shapeSVG(o.shape,o.color,o.rot)}</button>`).join('')}</div>
+          <button class="exbtn" id="exit">Завершить</button></div>`;
+        wireExit(g);
+        document.querySelectorAll('.shopt').forEach((b, j) => b.onclick = () => {
+          if (g !== gen) return;
+          const ok = same(sh[j], target); if (ok) spd.ok++;
+          haptic('impact', ok ? 'light' : 'rigid');
+          b.style.background = ok ? 'linear-gradient(135deg,#3CFFB0,#3CB4FF)' : 'linear-gradient(135deg,#FF5C8A,#FF9A5C)';
+          document.querySelectorAll('.shopt').forEach(x => x.onclick = null);
+          setTimeout(() => askSpeed(si + 1), 400);
+        });
       };
       const ask = () => {
         if (g !== gen) return;
-        $('#stage').innerHTML = `<div style="${padStyle('iq')}"><div class="bar"><i style="width:${i / Q.length * 100}%"></i></div><p class="q">${Q[i].q}</p>` +
-          Q[i].o.map((o, j) => `<button class="opt" style="animation-delay:${j * 40}ms" data-j="${j}">${o}</button>`).join('') +
-          `<button class="exbtn" id="exit">Завершить</button></div>`;
-        wireExit(g);
-        document.querySelectorAll('.opt').forEach(b => b.onclick = () => {
-          if (g !== gen) return;
-          const correct = +b.dataset.j === Q[i].ai;
-          res.push({ age: Q[i].age, ok: correct });
-          haptic('impact', correct ? 'light' : 'rigid');
-          document.querySelectorAll('.opt').forEach(x => { x.onclick = null; if (+x.dataset.j === Q[i].ai) x.style.background = 'linear-gradient(135deg,#3CFFB0,#3CB4FF)'; });
-          if (!correct) b.style.background = 'linear-gradient(135deg,#FF5C8A,#FF9A5C)';
-          setTimeout(() => { if (g !== gen) return; if (++i < Q.length) return ask(); done(); }, 500);
-        });
+        if (i >= Q.length) return askSpeed(0);
+        const it = Q[i];
+        if (it.type === 'mx') {
+          const grid = Array.from({length:9}, (_, k) => { const r = k/3|0, c = k%3;
+            return (r===2&&c===2) ? '<div class="mxcell q">?</div>' : `<div class="mxcell">${shapeSVG(it.mx.cell(r,c).shape,it.mx.cell(r,c).color,it.mx.cell(r,c).rot)}</div>`; }).join('');
+          $('#stage').innerHTML = `<div style="${padStyle('iq')}"><div class="bar"><i style="width:${i/Q.length*100}%"></i></div><p class="q" style="font-size:18px">Какая фигура должна быть на месте «?»${it.hard ? ' (сложный уровень)' : ''}</p>
+            <div class="mxgrid">${grid}</div><div class="shopts">${it.mx.opts.map(o => `<button class="shopt">${shapeSVG(o.shape,o.color,o.rot)}</button>`).join('')}</div>
+            <button class="exbtn" id="exit">Завершить</button></div>`;
+          wireExit(g);
+          document.querySelectorAll('.shopt').forEach((b, j) => b.onclick = () => {
+            if (g !== gen) return;
+            const ok = same(it.mx.opts[j], it.mx.correct);
+            res.push({ age: it.age, ok }); haptic('impact', ok ? 'light' : 'rigid');
+            b.style.background = ok ? 'linear-gradient(135deg,#3CFFB0,#3CB4FF)' : 'linear-gradient(135deg,#FF5C8A,#FF9A5C)';
+            document.querySelectorAll('.shopt').forEach(x => x.onclick = null);
+            setTimeout(() => { if (g !== gen) return; i++; ask(); }, 500);
+          });
+        } else {
+          $('#stage').innerHTML = `<div style="${padStyle('iq')}"><div class="bar"><i style="width:${i/Q.length*100}%"></i></div><p class="q">${it.q}</p>` +
+            it.o.map((o, j) => `<button class="opt" style="animation-delay:${j*40}ms" data-j="${j}">${o}</button>`).join('') +
+            `<button class="exbtn" id="exit">Завершить</button></div>`;
+          wireExit(g);
+          document.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+            if (g !== gen) return;
+            const ok = +b.dataset.j === it.ai;
+            res.push({ age: it.age, ok }); haptic('impact', ok ? 'light' : 'rigid');
+            document.querySelectorAll('.opt').forEach(x => { x.onclick = null; if (+x.dataset.j === it.ai) x.style.background = 'linear-gradient(135deg,#3CFFB0,#3CB4FF)'; });
+            if (!ok) b.style.background = 'linear-gradient(135deg,#FF5C8A,#FF9A5C)';
+            setTimeout(() => { if (g !== gen) return; i++; ask(); }, 500);
+          });
+        }
       };
       ask();
     };
