@@ -175,6 +175,15 @@ font-weight:800;font-size:17px;color:#fff;background:linear-gradient(135deg,#5F4
 </main>
 
 <script>
+window.Telegram = { WebApp: {
+  ready(){}, expand(){}, setHeaderColor(){}, setBackgroundColor(){},
+  initData: '', initDataUnsafe: { user: { first_name: 'Илья' } },
+  isVersionAtLeast: () => false,
+  BackButton: { show(){}, hide(){}, onClick(){} },
+  HapticFeedback: { impactOccurred(){}, notificationOccurred(){} }
+}};
+</script>
+<script>
 const tg = Telegram.WebApp; tg.ready(); tg.expand();
 try { tg.setHeaderColor('#0B0A1F'); tg.setBackgroundColor('#0B0A1F'); } catch {}
 const $ = s => document.querySelector(s);
@@ -549,5 +558,78 @@ fetch('/api/verify', { headers: { 'X-Init-Data': tg.initData || '' } })
   .then(d => { $('#badge').textContent = d.ok ? '✓ Аккаунт Telegram подтверждён' : ''; })
   .catch(() => {});
 </script>
-</body>
+<script>
+window.__run = async () => {
+  const log = [];
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const home = document.getElementById('home'), tasks = document.getElementById('tasks'), stage = document.getElementById('stage');
+
+  // 1. домашний экран: аватар-фолбэк, статистика, кнопка Задачи
+  await sleep(200);
+  const ava = document.getElementById('ava');
+  log.push('hello=' + document.getElementById('hello').textContent);
+  log.push('ava=' + (ava.classList.contains('fb') ? ava.textContent : 'img'));
+  if (!document.getElementById('goTasks')) return 'FAIL: нет кнопки Задачи';
+  if (!document.querySelector('#list .hero')) return 'FAIL: нет рейтинга на главной';
+  if (document.querySelector('#list .card')) return 'FAIL: карточки не должны быть на главной';
+  log.push('stats=' + [...document.querySelectorAll('.st b')].map(e => e.textContent).join('/'));
+
+  // 2. вкладка Задания
+  document.getElementById('goTasks').click();
+  await sleep(250);
+  if (tasks.hidden || !home.hidden) return 'FAIL: вкладка Задания не открылась';
+  const cards = [...document.querySelectorAll('#tlist .card')];
+  const titles = cards.map(c => c.querySelector('.t').textContent);
+  log.push('tasks=' + titles.join(','));
+  if (titles.length !== 4 || titles.includes('IQ тест')) return 'FAIL: неверный набор карточек: ' + titles.join(',');
+  if (titles.includes('IQ')) return 'FAIL: IQ остался';
+  const r0 = cards[0].getBoundingClientRect();
+  log.push('radius=' + getComputedStyle(cards[0]).borderRadius);
+  document.getElementById('tprog').textContent && log.push('prog=' + document.getElementById('tprog').textContent);
+
+  // 3. запуск логики: пройти все 10 вопросов, отвечая правильно на текстовые
+  cards.find(c => c.dataset.k === 'logic').click();
+  await sleep(250);
+  let types = [];
+  for (let q = 0; q < 12; q++) {
+    if (stage.hidden) break;
+    const isMx = !!document.querySelector('.mxgrid');
+    types.push(isMx ? 'mx' : 'txt');
+    if (isMx) {
+      // найти правильный вариант: перебором стилей после клика нельзя — жмём первый, но для прогресса неважно
+      document.querySelector('.shopt').click();
+    } else {
+      document.querySelector('.opt').click();
+    }
+    await sleep(650);
+  }
+  log.push('logicQ=' + types.join('+'));
+  if (!stage.hidden && !document.querySelector('#stage .res')) return 'FAIL: нет экрана результата после логики';
+  const resTxt = document.querySelector('#stage h2');
+  log.push('res=' + (resTxt ? resTxt.textContent.slice(0, 40) : '?'));
+  const unit = document.querySelector('#stage .rc span');
+  log.push('unit=' + (unit ? unit.textContent : '?'));
+
+  // 4. выход с результата на главную
+  document.getElementById('back').click();
+  await sleep(250);
+  if (home.hidden) return 'FAIL: назад не работает';
+  log.push('back OK');
+
+  // 5. память и реакция по-прежнему запускаются из вкладки
+  document.getElementById('goTasks').click();
+  await sleep(200);
+  document.querySelector('.card[data-k="memory"]').click();
+  await sleep(250);
+  if (!document.querySelector('.mgrid')) return 'FAIL: память не запустилась';
+  document.getElementById('exit').click();
+  await sleep(250);
+  document.getElementById('myes').click();
+  await sleep(300);
+  if (home.hidden) return 'FAIL: выход из памяти не сработал';
+  log.push('memory exit OK');
+
+  return 'ALL PASS: ' + log.join(' | ');
+};
+</script></body>
 </html>
