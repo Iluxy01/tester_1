@@ -80,6 +80,8 @@ background:linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent);
 background:var(--glass);border:1px solid var(--line);border-radius:14px;transition:background .2s,transform .15s;animation:cardIn .3s cubic-bezier(.2,.8,.2,1) backwards}
 .opt:active{transform:scale(.98)}
 .bar{height:6px;border-radius:6px;background:rgba(255,255,255,.1);overflow:hidden}
+#stage > div > .bar{margin-top:54px}
+.mwrap .mtop{margin-top:46px}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--a),var(--b));transition:width .3s}
 .res{text-align:center;padding:32px 20px 28px;animation:cardIn .45s cubic-bezier(.2,.8,.2,1)}
 .res.record{box-shadow:0 0 0 1px var(--a) inset,0 24px 70px -20px var(--a)}
@@ -373,7 +375,7 @@ const iqDraw = (shape, r) => {
   if (shape === 'hexagon') { const p = []; for (let k=0;k<6;k++){ const a = Math.PI/3*k - Math.PI/2; p.push(`${30+Math.cos(a)*r},${30+Math.sin(a)*r}`); } return `<polygon points="${p.join(' ')}"/>`; }
   const p = []; for (let k=0;k<10;k++){ const a = Math.PI/5*k - Math.PI/2, rr = k%2 ? r*.45 : r; p.push(`${30+Math.cos(a)*rr},${30+Math.sin(a)*rr}`); } return `<polygon points="${p.join(' ')}"/>`;
 };
-const iqSVG = (o, size=52) => {
+const iqSVG = (o, size=58) => {
   const g = o.stroke ? `fill="none" stroke="${o.color}" stroke-width="4"` : `fill="${o.color}"`;
   return `<svg viewBox="0 0 60 60" width="${size}" height="${size}"><g ${g}>${iqPlace(o.shape, o.r, o.count, o.rot)}</g></svg>`;
 };
@@ -423,9 +425,9 @@ function iqGenMatrix(level){
     cell = (r,c) => ({ shape:shapes[(c+r)%3], color:colors[(c+r*2)%3], r:17, count:1, rot:0, stroke:false });
     pool = { shapes: IQ_SH.filter(s2 => !shapes.includes(s2)), colors: IQ_COL.filter(c2 => !colors.includes(c2)) };
   } else if (level === 3){
-    const sizes = [11,19,27];
+    const sizes = [8,18,28];
     cell = (r,c) => ({ shape:shapes[(c+r)%3], color:colors[r], r:sizes[c], count:1, rot:0, stroke:false });
-    pool = { shapes: IQ_SH.filter(s2 => !shapes.includes(s2)), colors: IQ_COL.filter(c2 => !colors.includes(c2)), sizes:[9,15,21] };
+    pool = { shapes: IQ_SH.filter(s2 => !shapes.includes(s2)), colors: IQ_COL.filter(c2 => !colors.includes(c2)), sizes:[13,21] };
   } else {
     cell = (r,c) => ({ shape:shapes[(c+r)%3], color:colors[(c+r*2)%3], r:11, count:c+1, rot:0, stroke:false });
     pool = { shapes: IQ_SH.filter(s2 => !shapes.includes(s2)), colors: IQ_COL.filter(c2 => !colors.includes(c2)), counts:[1,2,4] };
@@ -445,9 +447,9 @@ function iqGenSeries(kind){
     correct = {shape, color, r:10, count:5, rot:0, stroke:false};
     pool = { counts:[2,3,6], sizes:[16] };
   } else if (kind === 'size'){
-    shown = [4,10,16,22].map(v => ({shape, color, r:v, count:1, rot:0, stroke:false}));
+    shown = [4,12,20].map(v => ({shape, color, r:v, count:1, rot:0, stroke:false}));
     correct = {shape, color, r:28, count:1, rot:0, stroke:false};
-    pool = { sizes:[7,13,19], counts:[2] };
+    pool = { sizes:[6,14,22], counts:[2] };
   } else if (kind === 'fibo'){
     shown = [1,1,2,3].map(n => ({shape, color, r:10, count:n, rot:0, stroke:false}));
     correct = {shape, color, r:10, count:5, rot:0, stroke:false};
@@ -463,13 +465,13 @@ function iqGenSeries(kind){
   } else { // супер: два чередующихся ряда — нечётные позиции растут по количеству, чётные по размеру
     shown = [
       {shape, color, r:10, count:1, rot:0, stroke:false},
-      {shape, color, r:16, count:1, rot:0, stroke:false},
+      {shape, color, r:13, count:1, rot:0, stroke:false},
       {shape, color, r:10, count:2, rot:0, stroke:false},
-      {shape, color, r:22, count:1, rot:0, stroke:false},
+      {shape, color, r:20, count:1, rot:0, stroke:false},
       {shape, color, r:10, count:3, rot:0, stroke:false},
     ];
-    correct = {shape, color, r:28, count:1, rot:0, stroke:false};
-    pool = { sizes:[16,22], counts:[2,4] };
+    correct = {shape, color, r:27, count:1, rot:0, stroke:false};
+    pool = { sizes:[12,21], counts:[2,4] };
   }
   const opts = shuffle([correct, ...iqDistractors(correct, pool)]);
   return { type:'series', shown, correct, opts };
