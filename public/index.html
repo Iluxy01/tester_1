@@ -219,6 +219,7 @@ const META = [
   { key:'logic',    title:'Логика',         icon:'🧩', a:'#FF6FD8', b:'#B24DFF', unit:'из 10', rule:'max', norm:v => v / 10 },
   { key:'taps',     title:'Скорость тапов', icon:'👆', a:'#3CFFB0', b:'#3CB4FF', unit:'тап/с', rule:'max', norm:v => v / 10 },
   { key:'memory',   title:'Память',         icon:'🎴', a:'#FFD34D', b:'#FF7A3D', unit:'из 10', rule:'max', norm:v => v / 10 },
+  { key:'iq',       title:'IQ',             icon:'🧠', a:'#4FC3FF', b:'#5F45FF', unit:'IQ',    rule:'max', norm:v => clamp((v - 55) / 95) },
 ];
 
 const ring = (p, a, b, size) => {
@@ -297,7 +298,7 @@ function renderTasks(){
   const done = META.filter(m => best[m.key] != null).length;
   $('#tprog').textContent = done + '/' + META.length;
   $('#tlist').innerHTML = `<div class="grid">${META.map((m, i) => { const r = best[m.key];
-    return `<button class="card ${(m.key === 'reaction' || m.key === 'memory') ? 'wide' : ''}" data-k="${m.key}" style="--a:${m.a};--b:${m.b};background:linear-gradient(150deg,${m.a}16,${m.b}0c);animation-delay:${i*70}ms">
+    return `<button class="card ${(m.key === 'reaction' || m.key === 'memory' || m.key === 'iq') ? 'wide' : ''}" data-k="${m.key}" style="--a:${m.a};--b:${m.b};background:linear-gradient(150deg,${m.a}16,${m.b}0c);animation-delay:${i*70}ms">
       <span class="num">0${i+1}</span>
       <span class="ic">${m.icon}</span><span class="t">${m.title}</span>
       <span class="v">${r ? r.v : '—'}<small>${m.unit}</small></span>
@@ -357,6 +358,82 @@ function finish(key, value, verdict){
   $('#again').onclick = () => startTest(key);
   $('#share').onclick = () => shareResult(shareText);
   $('#back').onclick = () => show('home');
+}
+
+// --- IQ-тест: картиночные задания (матрицы, ряды, «найди лишнее») + подсчёт с поправкой на возраст ---
+const IQ_SH = ['circle','square','triangle','diamond','hexagon','star'];
+const IQ_COL = ['#8B7BFF','#FF5C8A','#3CFFB0','#FFD34D','#4FC3FF','#FF9A5C'];
+const iqDraw = (shape, r) => {
+  if (shape === 'circle') return `<circle cx="30" cy="30" r="${r}"/>`;
+  if (shape === 'square') return `<rect x="${30-r}" y="${30-r}" width="${r*2}" height="${r*2}" rx="${r*.14}"/>`;
+  if (shape === 'triangle') return `<polygon points="30,${30-r} ${30+r*.87},${30+r*.5} ${30-r*.87},${30+r*.5}"/>`;
+  if (shape === 'diamond') return `<polygon points="30,${30-r} ${30+r},30 30,${30+r} ${30-r},30"/>`;
+  if (shape === 'hexagon') { const p = []; for (let k=0;k<6;k++){ const a = Math.PI/3*k - Math.PI/2; p.push(`${30+Math.cos(a)*r},${30+Math.sin(a)*r}`); } return `<polygon points="${p.join(' ')}"/>`; }
+  const p = []; for (let k=0;k<10;k++){ const a = Math.PI/5*k - Math.PI/2, rr = k%2 ? r*.45 : r; p.push(`${30+Math.cos(a)*rr},${30+Math.sin(a)*rr}`); } return `<polygon points="${p.join(' ')}"/>`;
+};
+const iqSVG = (shape, color, rot, r, size=46) => `<svg viewBox="0 0 60 60" width="${size}" height="${size}"><g fill="${color}" transform="rotate(${rot} 30 30)">${iqDraw(shape, r)}</g></svg>`;
+const iqSame = (a, b) => a.shape===b.shape && a.color===b.color && a.rot===b.rot && a.r===b.r;
+
+function iqGenMatrix(level){
+  const shapes = shuffle(IQ_SH).slice(0,3), colors = shuffle(IQ_COL).slice(0,3);
+  const rots = level >= 2 ? [0,120,240] : [0,0,0];
+  const sizes = level >= 3 ? [13,17,21] : [17,17,17];
+  const cell = (r,c) => ({ shape:shapes[(c+r)%3], color:colors[(c+r*2)%3], rot:rots[(c+r)%3], r:sizes[(c+r*2)%3] });
+  const correct = cell(2,2), opts = [correct];
+  while (opts.length < 5) {
+    const cand = { shape:shapes[Math.floor(Math.random()*3)], color:colors[Math.floor(Math.random()*3)], rot:rots[Math.floor(Math.random()*3)], r:sizes[Math.floor(Math.random()*3)] };
+    if (!opts.some(o => iqSame(o, cand))) opts.push(cand);
+  }
+  return { type:'matrix', cell, correct, opts: shuffle(opts) };
+}
+function iqGenSeries(level){
+  const shape = IQ_SH[Math.floor(Math.random()*IQ_SH.length)], color = IQ_COL[Math.floor(Math.random()*IQ_COL.length)];
+  const mode = level >= 2 && Math.random() < 0.5 ? 'size' : 'rot';
+  const seq = Array.from({length:5}, (_,k) => mode==='rot' ? { shape, color, rot:k*45, r:17 } : { shape, color, rot:0, r:10+k*3 });
+  const correct = seq[4];
+  const pool = mode === 'rot' ? [0,45,90,135,180,225,270,315] : [10,13,16,19,22,25,28,31];
+  const opts = [correct];
+  while (opts.length < 4) {
+    const val = pool[Math.floor(Math.random()*pool.length)];
+    const cand = mode==='rot' ? { shape, color, rot:val, r:17 } : { shape, color, rot:0, r:val };
+    if (!opts.some(o => iqSame(o, cand))) opts.push(cand);
+  }
+  return { type:'series', shown: seq.slice(0,4), correct, opts: shuffle(opts) };
+}
+function iqGenOdd(level){
+  const shape = IQ_SH[Math.floor(Math.random()*IQ_SH.length)], color = IQ_COL[Math.floor(Math.random()*IQ_COL.length)];
+  const rot = level >= 2 ? [0,60,120,180,240,300][Math.floor(Math.random()*6)] : 0;
+  const base = { shape, color, rot, r:17 };
+  const items = Array.from({length:5}, () => ({...base}));
+  const oddIdx = Math.floor(Math.random()*5);
+  const traits = level >= 2 ? ['shape','color','rot'] : ['shape','color'];
+  const trait = traits[Math.floor(Math.random()*traits.length)];
+  if (trait === 'shape') { let s2; do { s2 = IQ_SH[Math.floor(Math.random()*IQ_SH.length)]; } while (s2===shape); items[oddIdx].shape = s2; }
+  else if (trait === 'color') { let c2; do { c2 = IQ_COL[Math.floor(Math.random()*IQ_COL.length)]; } while (c2===color); items[oddIdx].color = c2; }
+  else items[oddIdx].rot = (rot + 90) % 360;
+  return { type:'odd', items, oddIdx };
+}
+const IQ_PLAN = [1,1,2,2,3].map(l => () => iqGenMatrix(l))
+  .concat([1,1,2,2,3].map(l => () => iqGenSeries(l)))
+  .concat([1,1,2,2,3].map(l => () => iqGenOdd(l)));
+
+// ожидаемая доля правильных ответов для среднего IQ=100 в данном возрасте (как возрастные нормы в реальных тестах)
+function iqAgeExpected(age){
+  if (age <= 6) return .28; if (age <= 8) return .36; if (age <= 10) return .44; if (age <= 12) return .50;
+  if (age <= 14) return .55; if (age <= 17) return .60; if (age <= 29) return .64; if (age <= 44) return .61;
+  if (age <= 59) return .56; if (age <= 69) return .50; return .44;
+}
+function iqCalc(correct, total, age){
+  const z = (correct/total - iqAgeExpected(age)) / .155;
+  return Math.max(55, Math.min(150, Math.round(100 + z*15)));
+}
+function iqVerdict(score){
+  if (score >= 135) return 'Уровень гения';
+  if (score >= 120) return 'Значительно выше среднего';
+  if (score >= 110) return 'Выше среднего';
+  if (score >= 90)  return 'Средний уровень';
+  if (score >= 80)  return 'Немного ниже среднего';
+  return 'Есть куда расти';
 }
 
 const padStyle = k => accent(META.find(m => m.key === k));
@@ -541,6 +618,67 @@ const TESTS = {
       }
     });
     setTimeout(() => { if (g === gen) play(); }, 500);
+  },
+
+  iq(g){
+    const N = IQ_PLAN.length;
+    const ageScreen = () => {
+      $('#stage').innerHTML = `<div class="glass res" style="${padStyle('iq')}">
+        <h2>Тест на IQ</h2>
+        <p>${N} заданий на визуальную логику — как в настоящих IQ-тестах. Результат считается с поправкой на возраст.</p>
+        <input type="number" id="ageInp" inputmode="numeric" min="5" max="99" placeholder="Сколько тебе лет?" class="opt" style="text-align:center;font-weight:800;font-size:17px;margin-top:16px">
+        <button class="btn main" id="ageGo" style="margin-top:12px">Начать</button></div>
+        <button class="exbtn" id="exit">Завершить</button>`;
+      wireExit(g);
+      $('#ageGo').onclick = () => {
+        if (g !== gen) return;
+        const age = Math.max(5, Math.min(99, +$('#ageInp').value || 25));
+        haptic('impact', 'light');
+        runQuiz(age);
+      };
+    };
+    const runQuiz = age => {
+      const Q = shuffle(IQ_PLAN).map(f => f());
+      let i = 0, correct = 0;
+      const answer = (b, ok) => {
+        if (ok) correct++;
+        haptic('impact', ok ? 'light' : 'rigid');
+        b.style.background = ok ? 'linear-gradient(135deg,#3CFFB0,#3CB4FF)' : 'linear-gradient(135deg,#FF5C8A,#FF9A5C)';
+        document.querySelectorAll('.shopt').forEach(x => x.onclick = null);
+        setTimeout(() => { if (g !== gen) return; i++; ask(); }, 500);
+      };
+      const ask = () => {
+        if (g !== gen) return;
+        if (i >= N) { const score = iqCalc(correct, N, age); return finish('iq', score, `${iqVerdict(score)} для ${age} лет`); }
+        const it = Q[i];
+        const bar = `<div class="bar"><i style="width:${i/N*100}%"></i></div>`;
+        if (it.type === 'matrix') {
+          const grid = Array.from({length:9}, (_, k) => { const r = k/3|0, c = k%3;
+            return (r===2&&c===2) ? '<div class="mxcell q">?</div>' : `<div class="mxcell">${iqSVG(it.cell(r,c).shape, it.cell(r,c).color, it.cell(r,c).rot, it.cell(r,c).r)}</div>`; }).join('');
+          $('#stage').innerHTML = `<div style="${padStyle('iq')}">${bar}<p class="q" style="font-size:17px">Что должно быть вместо «?»</p>
+            <div class="mxgrid">${grid}</div><div class="shopts">${it.opts.map(o => `<button class="shopt">${iqSVG(o.shape,o.color,o.rot,o.r)}</button>`).join('')}</div>
+            <button class="exbtn" id="exit">Завершить</button></div>`;
+          wireExit(g);
+          document.querySelectorAll('.shopt').forEach((b,j) => b.onclick = () => { if (g===gen) answer(b, iqSame(it.opts[j], it.correct)); });
+        } else if (it.type === 'series') {
+          const row = it.shown.map(s => `<div class="mxcell">${iqSVG(s.shape,s.color,s.rot,s.r)}</div>`).join('') + '<div class="mxcell q">?</div>';
+          $('#stage').innerHTML = `<div style="${padStyle('iq')}">${bar}<p class="q" style="font-size:17px">Продолжи закономерность</p>
+            <div class="mxgrid" style="grid-template-columns:repeat(5,1fr);max-width:340px;gap:6px">${row}</div>
+            <div class="shopts">${it.opts.map(o => `<button class="shopt">${iqSVG(o.shape,o.color,o.rot,o.r)}</button>`).join('')}</div>
+            <button class="exbtn" id="exit">Завершить</button></div>`;
+          wireExit(g);
+          document.querySelectorAll('.shopt').forEach((b,j) => b.onclick = () => { if (g===gen) answer(b, iqSame(it.opts[j], it.correct)); });
+        } else {
+          $('#stage').innerHTML = `<div style="${padStyle('iq')}">${bar}<p class="q" style="font-size:17px">Найди лишнюю картинку</p>
+            <div class="shopts">${it.items.map(s => `<button class="shopt">${iqSVG(s.shape,s.color,s.rot,s.r)}</button>`).join('')}</div>
+            <button class="exbtn" id="exit">Завершить</button></div>`;
+          wireExit(g);
+          document.querySelectorAll('.shopt').forEach((b,j) => b.onclick = () => { if (g===gen) answer(b, j === it.oddIdx); });
+        }
+      };
+      ask();
+    };
+    ageScreen();
   }
 };
 
