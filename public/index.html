@@ -155,6 +155,7 @@ font-weight:800;font-size:17px;color:#fff;background:linear-gradient(135deg,#5F4
 .anrow{display:flex;gap:10px;justify-content:center;align-items:center;margin:6px 0}
 .anarr{color:var(--mut);font-size:22px;font-weight:800}
 .mxcell{aspect-ratio:1;border-radius:12px;background:var(--glass);border:1px solid var(--line);display:grid;place-items:center;overflow:hidden}
+.mxcell.qmark{color:var(--mut);font-size:26px;font-weight:800}
 .mxcell.q{font-size:28px;font-weight:800;color:var(--mut)}
 .shopts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:4px}
 .shopt{all:unset;box-sizing:border-box;aspect-ratio:1;border-radius:12px;background:var(--glass);border:1px solid var(--line);display:grid;place-items:center;cursor:pointer;transition:transform .15s;animation:cardIn .3s cubic-bezier(.2,.8,.2,1) backwards}
@@ -400,9 +401,12 @@ const iqPick = (arr, not) => { let v; do { v = arr[Math.floor(Math.random()*arr.
 const ROT_SH = ['triangle']; // формы, у которых поворот реально виден
 
 // дистракторы как в матрицах Равена: каждый отличается от правильного ровно одним признаком
+// видимый ключ: при count>1 размер не виден; поворот виден только у треугольника (симметрия 120°)
+const iqVKey = o => JSON.stringify([o.shape, o.color, (o.count||1) > 1 ? 0 : o.r, o.count||1,
+  o.shape === 'triangle' ? (o.rot||0) % 120 : 0, !!o.stroke]);
 function iqDistractors(correct, pool){
   const cand = [];
-  const add = c => { if (c && !cand.some(o => iqSame(o, c)) && !iqSame(c, correct)) cand.push(c); };
+  const add = c => { if (c && !cand.some(o => iqVKey(o) === iqVKey(c)) && iqVKey(c) !== iqVKey(correct)) cand.push(c); };
   (pool.shapes||[]).forEach(s2 => add({...correct, shape:s2}));
   (pool.colors||[]).forEach(c2 => add({...correct, color:c2}));
   (pool.sizes||[]).forEach(v => add({...correct, r:v}));
@@ -445,7 +449,7 @@ function iqGenSeries(kind){
   if (kind === 'count'){
     shown = [1,2,3,4].map(n => ({shape, color, r:10, count:n, rot:0, stroke:false}));
     correct = {shape, color, r:10, count:5, rot:0, stroke:false};
-    pool = { counts:[2,3,6], sizes:[16] };
+    pool = { counts:[2,3,6], colors:[iqPick(IQ_COL, color)] };
   } else if (kind === 'size'){
     shown = [4,12,20].map(v => ({shape, color, r:v, count:1, rot:0, stroke:false}));
     correct = {shape, color, r:28, count:1, rot:0, stroke:false};
@@ -453,7 +457,7 @@ function iqGenSeries(kind){
   } else if (kind === 'fibo'){
     shown = [1,1,2,3].map(n => ({shape, color, r:10, count:n, rot:0, stroke:false}));
     correct = {shape, color, r:10, count:5, rot:0, stroke:false};
-    pool = { counts:[2,4,6], sizes:[16] };
+    pool = { counts:[2,4,6], colors:[iqPick(IQ_COL, color)] };
   } else if (kind === 'rot'){
     shown = [0,45,90,135].map(v => ({shape:'triangle', color, r:17, count:1, rot:v, stroke:false}));
     correct = {shape:'triangle', color, r:17, count:1, rot:180, stroke:false};
@@ -689,7 +693,7 @@ const TESTS = {
       const it = Q[i];
       if (it.type === 'mx') {
         const grid = Array.from({length:9}, (_, k) => { const r = k/3|0, c = k%3;
-          return (r===2&&c===2) ? '<div class="mxcell q">?</div>' : `<div class="mxcell">${shapeSVG(it.mx.cell(r,c).shape,it.mx.cell(r,c).color,it.mx.cell(r,c).rot)}</div>`; }).join('');
+          return (r===2&&c===2) ? '<div class="mxcell qmark">?</div>' : `<div class="mxcell">${shapeSVG(it.mx.cell(r,c).shape,it.mx.cell(r,c).color,it.mx.cell(r,c).rot)}</div>`; }).join('');
         $('#stage').innerHTML = `<div style="${padStyle('logic')}"><div class="bar"><i style="width:${i/Q.length*100}%"></i></div><p class="q" style="font-size:18px">Какая фигура должна быть на месте «?»${it.hard ? ' (сложный уровень)' : ''}</p>
           <div class="mxgrid">${grid}</div><div class="shopts">${it.mx.opts.map(o => `<button class="shopt">${shapeSVG(o.shape,o.color,o.rot)}</button>`).join('')}</div>
           <button class="exbtn" id="exit">Завершить</button></div>`;
@@ -805,14 +809,14 @@ const TESTS = {
         const bar = `<div class="bar"><i style="width:${i/N*100}%"></i></div>`;
         if (it.type === 'matrix') {
           const grid = Array.from({length:9}, (_, k) => { const r = k/3|0, c = k%3;
-            return (r===2&&c===2) ? '<div class="mxcell q">?</div>' : `<div class="mxcell">${iqSVG(it.cell(r,c))}</div>`; }).join('');
+            return (r===2&&c===2) ? '<div class="mxcell qmark">?</div>' : `<div class="mxcell">${iqSVG(it.cell(r,c))}</div>`; }).join('');
           $('#stage').innerHTML = `<div style="${padStyle('iq')}">${bar}<p class="q" style="font-size:17px">Что должно быть вместо «?»</p>
             <div class="mxgrid">${grid}</div><div class="shopts">${it.opts.map(o => `<button class="shopt">${iqSVG(o)}</button>`).join('')}</div>
             <button class="exbtn" id="exit">Завершить</button></div>`;
           wireExit(g);
           document.querySelectorAll('.shopt').forEach((b,j) => b.onclick = () => { if (g===gen) answer(b, iqSame(it.opts[j], it.correct)); });
         } else if (it.type === 'series') {
-          const row = it.shown.map(s => `<div class="mxcell">${iqSVG(s)}</div>`).join('') + '<div class="mxcell q">?</div>';
+          const row = it.shown.map(s => `<div class="mxcell">${iqSVG(s)}</div>`).join('') + '<div class="mxcell qmark">?</div>';
           $('#stage').innerHTML = `<div style="${padStyle('iq')}">${bar}<p class="q" style="font-size:17px">Продолжи закономерность</p>
             <div class="mxgrid" style="grid-template-columns:repeat(${it.shown.length+1},1fr);max-width:340px;gap:6px">${row}</div>
             <div class="shopts">${it.opts.map(o => `<button class="shopt">${iqSVG(o)}</button>`).join('')}</div>
@@ -823,7 +827,7 @@ const TESTS = {
           const cellH = o => `<div class="mxcell">${iqSVG(o)}</div>`;
           $('#stage').innerHTML = `<div style="${padStyle('iq')}">${bar}<p class="q" style="font-size:17px">Первая пара задаёт правило — примени его ко второй</p>
             <div class="anrow">${cellH(it.A)}<span class="anarr">→</span>${cellH(it.B)}</div>
-            <div class="anrow">${cellH(it.C)}<span class="anarr">→</span><div class="mxcell q">?</div></div>
+            <div class="anrow">${cellH(it.C)}<span class="anarr">→</span><div class="mxcell qmark">?</div></div>
             <div class="shopts">${it.opts.map(o => `<button class="shopt">${iqSVG(o)}</button>`).join('')}</div>
             <button class="exbtn" id="exit">Завершить</button></div>`;
           wireExit(g);
