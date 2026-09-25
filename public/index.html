@@ -150,6 +150,8 @@ font-weight:800;font-size:17px;color:#fff;background:linear-gradient(135deg,#5F4
 .tpill{padding:8px 14px;border-radius:12px;background:var(--glass);border:1px solid var(--line);font-weight:800;font-size:14px}
 .card .num{position:absolute;top:14px;right:16px;font-size:13px;font-weight:800;color:var(--mut);opacity:.75}
 .mxgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px auto;max-width:280px}
+.anrow{display:flex;gap:10px;justify-content:center;align-items:center;margin:6px 0}
+.anarr{color:var(--mut);font-size:22px;font-weight:800}
 .mxcell{aspect-ratio:1;border-radius:12px;background:var(--glass);border:1px solid var(--line);display:grid;place-items:center;overflow:hidden}
 .mxcell.q{font-size:28px;font-weight:800;color:var(--mut)}
 .shopts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:4px}
@@ -371,12 +373,18 @@ const iqDraw = (shape, r) => {
   if (shape === 'hexagon') { const p = []; for (let k=0;k<6;k++){ const a = Math.PI/3*k - Math.PI/2; p.push(`${30+Math.cos(a)*r},${30+Math.sin(a)*r}`); } return `<polygon points="${p.join(' ')}"/>`; }
   const p = []; for (let k=0;k<10;k++){ const a = Math.PI/5*k - Math.PI/2, rr = k%2 ? r*.45 : r; p.push(`${30+Math.cos(a)*rr},${30+Math.sin(a)*rr}`); } return `<polygon points="${p.join(' ')}"/>`;
 };
-const iqSVG = (shape, color, count, r, size=52) => `<svg viewBox="0 0 60 60" width="${size}" height="${size}"><g fill="${color}">${iqPlace(shape, r, count)}</g></svg>`;
-const iqSame = (a, b) => a.shape===b.shape && a.color===b.color && a.r===b.r && (a.count||1)===(b.count||1);
-// раскладка нескольких фигур внутри ячейки 60x60
-const iqPlace = (shape, r, count) => {
+const iqSVG = (o, size=52) => {
+  const g = o.stroke ? `fill="none" stroke="${o.color}" stroke-width="4"` : `fill="${o.color}"`;
+  return `<svg viewBox="0 0 60 60" width="${size}" height="${size}"><g ${g}>${iqPlace(o.shape, o.r, o.count, o.rot)}</g></svg>`;
+};
+const iqSame = (a, b) => a.shape===b.shape && a.color===b.color && a.r===b.r && (a.count||1)===(b.count||1) && (a.rot||0)===(b.rot||0) && !!a.stroke===!!b.stroke;
+// раскладка фигур внутри ячейки 60x60; rot — только для «видимых» форм (треугольник)
+const iqPlace = (shape, r, count, rot) => {
   count = count || 1;
-  if (count === 1) return iqDraw(shape, r);
+  if (count === 1) {
+    const d = iqDraw(shape, r);
+    return rot ? `<g transform="rotate(${rot} 30 30)">${d}</g>` : d;
+  }
   const spots = count === 2 ? [[17,30],[43,30]] :
     count === 3 ? [[13,30],[30,30],[47,30]] :
     count === 4 ? [[19,19],[41,19],[19,41],[41,41]] :
@@ -387,6 +395,7 @@ const iqPlace = (shape, r, count) => {
 };
 
 const iqPick = (arr, not) => { let v; do { v = arr[Math.floor(Math.random()*arr.length)]; } while (v === not); return v; };
+const ROT_SH = ['triangle']; // формы, у которых поворот реально виден
 
 // дистракторы как в матрицах Равена: каждый отличается от правильного ровно одним признаком
 function iqDistractors(correct, pool){
@@ -396,58 +405,166 @@ function iqDistractors(correct, pool){
   (pool.colors||[]).forEach(c2 => add({...correct, color:c2}));
   (pool.sizes||[]).forEach(v => add({...correct, r:v}));
   (pool.counts||[]).forEach(v => add({...correct, count:v}));
+  (pool.rots||[]).forEach(v => add({...correct, rot:v}));
   return shuffle(cand).slice(0, 4);
 }
 
 function iqGenMatrix(level){
-  // ур.1: фигуры + цвет; ур.2: + количество фигур (1-3); ур.3: + размер (шаги видны глазу)
+  // 1: форма — латинский квадрат, цвет — по строке
+  // 2: форма и цвет — два независимых латинских квадрата
+  // 3: + размер по столбцу (шаги видны глазу)
+  // 4 (супер): форма+цвет квадраты, количество по столбцу — три правила сразу
   const shapes = shuffle(IQ_SH).slice(0,3), colors = shuffle(IQ_COL).slice(0,3);
-  const counts = level === 2 ? [1,2,3] : null;
-  const sizes  = level === 3 ? [11,19,27] : null;
-  const cell = (r,c) => ({ shape:shapes[(c+r)%3], color:colors[r], r: sizes ? sizes[c] : 17, count: counts ? counts[c] : 1 });
+  let cell, pool;
+  if (level === 1){
+    cell = (r,c) => ({ shape:shapes[(c+r)%3], color:colors[r], r:17, count:1, rot:0, stroke:false });
+    pool = { shapes: IQ_SH.filter(s2 => !shapes.includes(s2)), colors: IQ_COL.filter(c2 => !colors.includes(c2)) };
+  } else if (level === 2){
+    cell = (r,c) => ({ shape:shapes[(c+r)%3], color:colors[(c+r*2)%3], r:17, count:1, rot:0, stroke:false });
+    pool = { shapes: IQ_SH.filter(s2 => !shapes.includes(s2)), colors: IQ_COL.filter(c2 => !colors.includes(c2)) };
+  } else if (level === 3){
+    const sizes = [11,19,27];
+    cell = (r,c) => ({ shape:shapes[(c+r)%3], color:colors[r], r:sizes[c], count:1, rot:0, stroke:false });
+    pool = { shapes: IQ_SH.filter(s2 => !shapes.includes(s2)), colors: IQ_COL.filter(c2 => !colors.includes(c2)), sizes:[9,15,21] };
+  } else {
+    cell = (r,c) => ({ shape:shapes[(c+r)%3], color:colors[(c+r*2)%3], r:11, count:c+1, rot:0, stroke:false });
+    pool = { shapes: IQ_SH.filter(s2 => !shapes.includes(s2)), colors: IQ_COL.filter(c2 => !colors.includes(c2)), counts:[1,2,4] };
+  }
   const correct = cell(2,2);
-  const opts = shuffle([correct, ...iqDistractors(correct, {
-    shapes: IQ_SH.filter(s2 => !shapes.includes(s2)),
-    colors: IQ_COL.filter(c2 => !colors.includes(c2)),
-    sizes:  sizes ? [7,15] : null,
-    counts: counts ? [1,2,4] : null
-  })]);
+  const opts = shuffle([correct, ...iqDistractors(correct, pool)]);
   return { type:'matrix', cell, correct, opts };
 }
-function iqGenSeries(level){
-  const shape = IQ_SH[Math.floor(Math.random()*IQ_SH.length)], color = IQ_COL[Math.floor(Math.random()*IQ_COL.length)];
-  const useCount = level >= 2 && Math.random() < 0.5;
+
+function iqGenSeries(kind){
+  const shape = IQ_SH[Math.floor(Math.random()*IQ_SH.length)];
+  const color = IQ_COL[Math.floor(Math.random()*IQ_COL.length)];
+  const color2 = iqPick(IQ_COL, color);
   let shown, correct, pool;
-  if (useCount) {
-    shown = [1,2,3,4].map(count => ({shape, color, count, r:10}));
-    correct = {shape, color, count:5, r:10};
-    pool = { counts:[2,3,6], sizes:[4,16] };
-  } else {
-    shown = [5,11,17,23].map(r => ({shape, color, count:1, r}));
-    correct = {shape, color, count:1, r:29};
-    pool = { sizes:[8,14], counts:[2,3] };
+  if (kind === 'count'){
+    shown = [1,2,3,4].map(n => ({shape, color, r:10, count:n, rot:0, stroke:false}));
+    correct = {shape, color, r:10, count:5, rot:0, stroke:false};
+    pool = { counts:[2,3,6], sizes:[16] };
+  } else if (kind === 'size'){
+    shown = [4,10,16,22].map(v => ({shape, color, r:v, count:1, rot:0, stroke:false}));
+    correct = {shape, color, r:28, count:1, rot:0, stroke:false};
+    pool = { sizes:[7,13,19], counts:[2] };
+  } else if (kind === 'fibo'){
+    shown = [1,1,2,3].map(n => ({shape, color, r:10, count:n, rot:0, stroke:false}));
+    correct = {shape, color, r:10, count:5, rot:0, stroke:false};
+    pool = { counts:[2,4,6], sizes:[16] };
+  } else if (kind === 'rot'){
+    shown = [0,45,90,135].map(v => ({shape:'triangle', color, r:17, count:1, rot:v, stroke:false}));
+    correct = {shape:'triangle', color, r:17, count:1, rot:180, stroke:false};
+    pool = { rots:[90,225,270,315] };
+  } else if (kind === 'dual'){
+    shown = [1,2,3,4].map((n,i) => ({shape, color: i%2 ? color2 : color, r:10, count:n, rot:0, stroke:false}));
+    correct = {shape, color, r:10, count:5, rot:0, stroke:false};
+    pool = { counts:[3,4,6], colors:[color2] };
+  } else { // супер: два чередующихся ряда — нечётные позиции растут по количеству, чётные по размеру
+    shown = [
+      {shape, color, r:10, count:1, rot:0, stroke:false},
+      {shape, color, r:16, count:1, rot:0, stroke:false},
+      {shape, color, r:10, count:2, rot:0, stroke:false},
+      {shape, color, r:22, count:1, rot:0, stroke:false},
+      {shape, color, r:10, count:3, rot:0, stroke:false},
+    ];
+    correct = {shape, color, r:28, count:1, rot:0, stroke:false};
+    pool = { sizes:[16,22], counts:[2,4] };
   }
   const opts = shuffle([correct, ...iqDistractors(correct, pool)]);
   return { type:'series', shown, correct, opts };
 }
-function iqGenOdd(level){
-  const shape = IQ_SH[Math.floor(Math.random()*IQ_SH.length)], color = IQ_COL[Math.floor(Math.random()*IQ_COL.length)];
-  const traits = level >= 2 ? ['shape','color','size','count'] : ['shape','color'];
-  const trait = traits[Math.floor(Math.random()*traits.length)];
-  const base = { shape, color, r:13, count:1 };
-  const items = Array.from({length:5}, () => ({...base}));
-  const odd = {...base};
-  if (trait === 'shape') odd.shape = iqPick(IQ_SH, shape);
-  else if (trait === 'color') odd.color = iqPick(IQ_COL, color);
-  else if (trait === 'size') odd.r = 24;
-  else { odd.count = 3; odd.r = 10; }
-  const oddIdx = Math.floor(Math.random()*5);
-  items[oddIdx] = odd;
+
+function iqGenOdd(kind){
+  const shape = IQ_SH[Math.floor(Math.random()*IQ_SH.length)];
+  const color = IQ_COL[Math.floor(Math.random()*IQ_COL.length)];
+  const color2 = iqPick(IQ_COL, color);
+  let items, oddIdx;
+  if (kind === 'count'){ // ряд 1-5 по возрастанию, одна карточка выпадает (вместо неё 6)
+    oddIdx = Math.floor(Math.random()*5);
+    items = Array.from({length:5}, (_,i) => ({shape, color, r:10, count:i+1, rot:0, stroke:false}));
+    items[oddIdx] = {shape, color, r:10, count:6, rot:0, stroke:false};
+  } else if (kind === 'rot'){ // поворот +45° на шаг, одна карточка сбивает последовательность
+    oddIdx = 1 + Math.floor(Math.random()*3);
+    items = Array.from({length:5}, (_,i) => ({shape:'triangle', color, r:17, count:1, rot:i*45, stroke:false}));
+    const norm = v => ((v % 120) + 120) % 120;
+    const taken = new Set(items.filter((_,i)=>i!==oddIdx).map(x => norm(x.rot)));
+    let cand = oddIdx*45 + 90;
+    while (taken.has(norm(cand)) || norm(cand) === norm(oddIdx*45)) cand += 45;
+    items[oddIdx] = {shape:'triangle', color, r:17, count:1, rot:cand, stroke:false};
+  } else if (kind === 'alt'){ // цвета чередуются через один, одна карточка ломает чередование
+    oddIdx = Math.floor(Math.random()*5);
+    items = Array.from({length:5}, (_,i) => ({shape, color: i%2 ? color2 : color, r:15, count:1, rot:0, stroke:false}));
+    items[oddIdx] = {shape, color: oddIdx%2 ? color : color2, r:15, count:1, rot:0, stroke:false};
+  } else { // сложно: форма и цвет идут двумя параллельными циклами, сбит цветовой
+    const shapes = shuffle(IQ_SH).slice(0,3), colors = shuffle(IQ_COL).slice(0,3);
+    // позиция сбоя — только там, где цвет повторяется (иначе палитра схлопнется до 2 цветов и возникнет двусмысленность)
+    oddIdx = [0,1,3,4][Math.floor(Math.random()*4)];
+    items = Array.from({length:5}, (_,i) => ({shape:shapes[i%3], color:colors[i%3], r:13, count:1, rot:0, stroke:false}));
+    items[oddIdx] = {...items[oddIdx], color:colors[(oddIdx+1)%3]};
+  }
   return { type:'odd', items, oddIdx };
 }
-const IQ_PLAN = [1,1,2,2,3].map(l => () => iqGenMatrix(l))
-  .concat([1,1,2,2,3].map(l => () => iqGenSeries(l)))
-  .concat([1,1,2,2,3].map(l => () => iqGenOdd(l)));
+
+function iqGenAnalogy(kind){
+  const usesRot = kind === 'rot' || kind === 'rotstroke';
+  const shape = usesRot ? 'triangle' : IQ_SH[Math.floor(Math.random()*IQ_SH.length)];
+  const color = IQ_COL[Math.floor(Math.random()*IQ_COL.length)];
+  const A = {shape, color, r:12, count:1, rot:0, stroke:false};
+  let T;
+  if (kind === 'size')      T = o => ({...o, r:24});
+  else if (kind === 'stroke') T = o => ({...o, stroke:true});
+  else if (kind === 'rot')  T = o => ({...o, rot:90});
+  else                      T = o => ({...o, rot:90, stroke:true}); // сложно: поворот + обводка
+  const B = T(A);
+  const C = {...A, shape: usesRot ? 'triangle' : iqPick(IQ_SH, shape), color: usesRot ? iqPick(IQ_COL, color) : color};
+  const correct = T(C);
+  const opts = [correct];
+  const push = o => { if (o && !opts.some(x => iqSame(x, o)) && !iqSame(o, correct) && opts.length < 5) opts.push(o); };
+  if (kind === 'size'){
+    push({...C});                                          // без изменения
+    push({...C, r:18});                                    // половинное изменение
+    push({...C, r:6});                                     // не туда
+    push({...correct, color: iqPick(IQ_COL, correct.color)}); // лишняя смена цвета
+  } else if (kind === 'stroke'){
+    push({...C});                                          // без изменения
+    push({...correct, color: iqPick(IQ_COL, correct.color)});
+    push({...correct, r:20});
+    push({...C, r:20});                                    // только размер
+  } else if (kind === 'rot'){
+    push({...C});                                          // без поворота
+    push({...C, rot:45});
+    push({...C, rot:180});
+    push({...C, rot:270});
+  } else {
+    push({...C});                                          // ничего
+    push({...C, rot:90});                                  // только поворот
+    push({...C, stroke:true});                             // только обводка
+    push({...correct, rot:180});                           // не тот поворот
+  }
+  return { type:'analogy', A, B, C, correct, opts: shuffle(opts) };
+}
+
+const IQ_PLAN = [
+  () => iqGenMatrix(1),
+  () => iqGenMatrix(2), () => iqGenMatrix(2),
+  () => iqGenMatrix(3), () => iqGenMatrix(3),
+  () => iqGenMatrix(4),                                            // супер
+  () => iqGenSeries('count'),
+  () => iqGenSeries('size'),
+  () => iqGenSeries('fibo'),
+  () => iqGenSeries('rot'),
+  () => iqGenSeries('dual'),
+  () => iqGenSeries('super'),                                      // супер
+  () => iqGenOdd('count'),
+  () => iqGenOdd('rot'),
+  () => iqGenOdd('alt'),
+  () => iqGenOdd('cycle'),                                         // сложно
+  () => iqGenAnalogy('size'),
+  () => iqGenAnalogy('stroke'),
+  () => iqGenAnalogy('rot'),
+  () => iqGenAnalogy('rotstroke'),                                 // сложно
+];
 
 // ожидаемая доля правильных ответов для среднего IQ=100 в данном возрасте (как возрастные нормы в реальных тестах)
 function iqAgeExpected(age){
@@ -657,7 +774,7 @@ const TESTS = {
     const ageScreen = () => {
       $('#stage').innerHTML = `<div class="glass res" style="${padStyle('iq')}">
         <h2>Тест на IQ</h2>
-        <p>${N} заданий на визуальную логику — как в настоящих IQ-тестах. Результат считается с поправкой на возраст.</p>
+        <p>${N} заданий — от простых до суперсложных: матрицы, ряды, аналогии и «найди лишнее». Результат считается с поправкой на возраст.</p>
         <input type="number" id="ageInp" inputmode="numeric" min="5" max="99" placeholder="Сколько тебе лет?" class="opt" style="text-align:center;font-weight:800;font-size:17px;margin-top:16px">
         <button class="btn main" id="ageGo" style="margin-top:12px">Начать</button></div>
         <button class="exbtn" id="exit">Завершить</button>`;
@@ -686,23 +803,32 @@ const TESTS = {
         const bar = `<div class="bar"><i style="width:${i/N*100}%"></i></div>`;
         if (it.type === 'matrix') {
           const grid = Array.from({length:9}, (_, k) => { const r = k/3|0, c = k%3;
-            return (r===2&&c===2) ? '<div class="mxcell q">?</div>' : `<div class="mxcell">${iqSVG(it.cell(r,c).shape, it.cell(r,c).color, it.cell(r,c).count, it.cell(r,c).r)}</div>`; }).join('');
+            return (r===2&&c===2) ? '<div class="mxcell q">?</div>' : `<div class="mxcell">${iqSVG(it.cell(r,c))}</div>`; }).join('');
           $('#stage').innerHTML = `<div style="${padStyle('iq')}">${bar}<p class="q" style="font-size:17px">Что должно быть вместо «?»</p>
-            <div class="mxgrid">${grid}</div><div class="shopts">${it.opts.map(o => `<button class="shopt">${iqSVG(o.shape,o.color,o.count,o.r)}</button>`).join('')}</div>
+            <div class="mxgrid">${grid}</div><div class="shopts">${it.opts.map(o => `<button class="shopt">${iqSVG(o)}</button>`).join('')}</div>
             <button class="exbtn" id="exit">Завершить</button></div>`;
           wireExit(g);
           document.querySelectorAll('.shopt').forEach((b,j) => b.onclick = () => { if (g===gen) answer(b, iqSame(it.opts[j], it.correct)); });
         } else if (it.type === 'series') {
-          const row = it.shown.map(s => `<div class="mxcell">${iqSVG(s.shape,s.color,s.count,s.r)}</div>`).join('') + '<div class="mxcell q">?</div>';
+          const row = it.shown.map(s => `<div class="mxcell">${iqSVG(s)}</div>`).join('') + '<div class="mxcell q">?</div>';
           $('#stage').innerHTML = `<div style="${padStyle('iq')}">${bar}<p class="q" style="font-size:17px">Продолжи закономерность</p>
-            <div class="mxgrid" style="grid-template-columns:repeat(5,1fr);max-width:340px;gap:6px">${row}</div>
-            <div class="shopts">${it.opts.map(o => `<button class="shopt">${iqSVG(o.shape,o.color,o.count,o.r)}</button>`).join('')}</div>
+            <div class="mxgrid" style="grid-template-columns:repeat(${it.shown.length+1},1fr);max-width:340px;gap:6px">${row}</div>
+            <div class="shopts">${it.opts.map(o => `<button class="shopt">${iqSVG(o)}</button>`).join('')}</div>
+            <button class="exbtn" id="exit">Завершить</button></div>`;
+          wireExit(g);
+          document.querySelectorAll('.shopt').forEach((b,j) => b.onclick = () => { if (g===gen) answer(b, iqSame(it.opts[j], it.correct)); });
+        } else if (it.type === 'analogy') {
+          const cellH = o => `<div class="mxcell">${iqSVG(o)}</div>`;
+          $('#stage').innerHTML = `<div style="${padStyle('iq')}">${bar}<p class="q" style="font-size:17px">Первая пара задаёт правило — примени его ко второй</p>
+            <div class="anrow">${cellH(it.A)}<span class="anarr">→</span>${cellH(it.B)}</div>
+            <div class="anrow">${cellH(it.C)}<span class="anarr">→</span><div class="mxcell q">?</div></div>
+            <div class="shopts">${it.opts.map(o => `<button class="shopt">${iqSVG(o)}</button>`).join('')}</div>
             <button class="exbtn" id="exit">Завершить</button></div>`;
           wireExit(g);
           document.querySelectorAll('.shopt').forEach((b,j) => b.onclick = () => { if (g===gen) answer(b, iqSame(it.opts[j], it.correct)); });
         } else {
           $('#stage').innerHTML = `<div style="${padStyle('iq')}">${bar}<p class="q" style="font-size:17px">Найди лишнюю картинку</p>
-            <div class="shopts">${it.items.map(s => `<button class="shopt">${iqSVG(s.shape,s.color,s.count,s.r)}</button>`).join('')}</div>
+            <div class="shopts">${it.items.map(s => `<button class="shopt">${iqSVG(s)}</button>`).join('')}</div>
             <button class="exbtn" id="exit">Завершить</button></div>`;
           wireExit(g);
           document.querySelectorAll('.shopt').forEach((b,j) => b.onclick = () => { if (g===gen) answer(b, j === it.oddIdx); });
