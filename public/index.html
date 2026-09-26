@@ -137,7 +137,7 @@ transform:scale(.92);transition:transform .2s cubic-bezier(.2,.8,.2,1)}
 .mbox small{display:block;margin:8px 0 18px;color:var(--mut);font-size:13.5px}
 /* шапка, аватар, статистика, вкладка заданий */
 .who{display:flex;align-items:center;gap:11px;min-width:0}
-.ava{flex:none;width:44px;height:44px;border-radius:50%;background:var(--glass) center/cover no-repeat;border:2px solid var(--line);
+.ava{flex:none;width:48px;height:48px;border-radius:50%;background:var(--glass) center/cover no-repeat;border:2px solid var(--line);
 display:grid;place-items:center;font-weight:800;font-size:17px;box-shadow:0 6px 18px -6px rgba(139,123,255,.55)}
 .ava.fb{background:linear-gradient(135deg,#8B7BFF,#4FC3FF);color:#fff;border-color:transparent}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
@@ -153,12 +153,13 @@ font-weight:800;font-size:17px;color:#fff;background:linear-gradient(135deg,#5F4
 .card .num{position:absolute;top:14px;right:16px;font-size:13px;font-weight:800;color:var(--mut);opacity:.75}
 .mxgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px auto;max-width:280px}
 .anrow{display:flex;gap:10px;justify-content:center;align-items:center;margin:6px 0}
+.anrow .mxcell{width:62px;height:62px;flex:none;padding:3px}
 .anarr{color:var(--mut);font-size:22px;font-weight:800}
-.mxcell{aspect-ratio:1;border-radius:12px;background:var(--glass);border:1px solid var(--line);display:grid;place-items:center;overflow:hidden}
+.mxcell{aspect-ratio:1;border-radius:12px;background:var(--glass);border:1px solid var(--line);display:grid;place-items:center;overflow:hidden;padding:4px}
 .mxcell.qmark{color:var(--mut);font-size:26px;font-weight:800}
 .mxcell.q{font-size:28px;font-weight:800;color:var(--mut)}
 .shopts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:4px}
-.shopt{all:unset;box-sizing:border-box;aspect-ratio:1;border-radius:12px;background:var(--glass);border:1px solid var(--line);display:grid;place-items:center;cursor:pointer;transition:transform .15s;animation:cardIn .3s cubic-bezier(.2,.8,.2,1) backwards}
+.shopt{all:unset;box-sizing:border-box;width:58px;height:58px;padding:4px;border-radius:12px;background:var(--glass);border:1px solid var(--line);display:grid;place-items:center;cursor:pointer;transition:transform .15s;animation:cardIn .3s cubic-bezier(.2,.8,.2,1) backwards}
 .shopt:active{transform:scale(.94)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -378,7 +379,7 @@ const iqDraw = (shape, r) => {
 };
 const iqSVG = (o, size=58) => {
   const g = o.stroke ? `fill="none" stroke="${o.color}" stroke-width="4"` : `fill="${o.color}"`;
-  return `<svg viewBox="0 0 60 60" width="${size}" height="${size}"><g ${g}>${iqPlace(o.shape, o.r, o.count, o.rot)}</g></svg>`;
+  return `<svg viewBox="0 0 60 60" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"><g ${g}>${iqPlace(o.shape, o.r, o.count, o.rot)}</g></svg>`;
 };
 const iqSame = (a, b) => a.shape===b.shape && a.color===b.color && a.r===b.r && (a.count||1)===(b.count||1) && (a.rot||0)===(b.rot||0) && !!a.stroke===!!b.stroke;
 // раскладка фигур внутри ячейки 60x60; rot — только для «видимых» форм (треугольник)
