@@ -207,7 +207,7 @@ const tgu = tg.initDataUnsafe?.user;
 $('#hello').textContent = 'Привет, ' + (tgu?.first_name || 'гость');
 {
   const ava = $('#ava');
-  if (tgu?.photo_url) ava.style.backgroundImage = 'url("' + tgu.photo_url + '")';
+  if (tgu?.photo_url) ava.style.backgroundImage = `url(${JSON.stringify(tgu.photo_url)})`;
   else { ava.textContent = tgu?.first_name ? tgu.first_name[0].toUpperCase() : '👤'; ava.classList.add('fb'); }
 }
 
@@ -379,7 +379,7 @@ const iqDraw = (shape, r) => {
   if (shape === 'hexagon') { const p = []; for (let k=0;k<6;k++){ const a = Math.PI/3*k - Math.PI/2; p.push(`${30+Math.cos(a)*r},${30+Math.sin(a)*r}`); } return `<polygon points="${p.join(' ')}"/>`; }
   const p = []; for (let k=0;k<10;k++){ const a = Math.PI/5*k - Math.PI/2, rr = k%2 ? r*.45 : r; p.push(`${30+Math.cos(a)*rr},${30+Math.sin(a)*rr}`); } return `<polygon points="${p.join(' ')}"/>`;
 };
-const iqSVG = (o, size=58) => {
+const iqSVG = (o) => {
   const g = o.stroke ? `fill="none" stroke="${o.color}" stroke-width="4"` : `fill="${o.color}"`;
   return `<svg viewBox="0 0 60 60" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"><g ${g}>${iqPlace(o.shape, o.r, o.count, o.rot)}</g></svg>`;
 };
@@ -400,7 +400,7 @@ const iqPlace = (shape, r, count, rot) => {
   return spots.map(([x,y]) => `<g transform="translate(${x-30},${y-30})">${iqDraw(shape, cr)}</g>`).join('');
 };
 
-const iqPick = (arr, not) => { let v; do { v = arr[Math.floor(Math.random()*arr.length)]; } while (v === not); return v; };
+const iqPick = (arr, ...nots) => { let v; do { v = arr[Math.floor(Math.random()*arr.length)]; } while (nots.includes(v)); return v; };
 const ROT_SH = ['triangle']; // формы, у которых поворот реально виден
 
 // дистракторы как в матрицах Равена: каждый отличается от правильного ровно одним признаком
@@ -425,22 +425,27 @@ function iqGenMatrix(level){
   // 4 (супер): форма+цвет квадраты, количество по столбцу — три правила сразу
   // правило количества видно только при count>1; размер при count>1 не виден (см. iqVKey)
   const shapes = shuffle(IQ_SH).slice(0,3), colors = shuffle(IQ_COL).slice(0,3);
-  let cell, pool;
+  const sizes3 = [8,18,28], counts3 = [1,2,3];
+  let cell;
   if (level === 1){
     cell = (r,c) => ({ shape:shapes[(c+r)%3], color:colors[r], r:17, count:1, rot:0, stroke:false });
-    pool = { shapes: IQ_SH.filter(s2 => !shapes.includes(s2)), colors: IQ_COL.filter(c2 => !colors.includes(c2)) };
   } else if (level === 2){
     cell = (r,c) => ({ shape:shapes[(c+r)%3], color:colors[(c+r*2)%3], r:17, count:1, rot:0, stroke:false });
-    pool = { shapes: IQ_SH.filter(s2 => !shapes.includes(s2)), colors: IQ_COL.filter(c2 => !colors.includes(c2)) };
   } else if (level === 3){
-    const sizes = [8,18,28];
-    cell = (r,c) => ({ shape:shapes[(c+r)%3], color:colors[r], r:sizes[c], count:1, rot:0, stroke:false });
-    pool = { shapes: IQ_SH.filter(s2 => !shapes.includes(s2)), colors: IQ_COL.filter(c2 => !colors.includes(c2)), sizes:[13,21] };
+    cell = (r,c) => ({ shape:shapes[(c+r)%3], color:colors[r], r:sizes3[c], count:1, rot:0, stroke:false });
   } else {
     cell = (r,c) => ({ shape:shapes[(c+r)%3], color:colors[(c+r*2)%3], r:11, count:c+1, rot:0, stroke:false });
-    pool = { shapes: IQ_SH.filter(s2 => !shapes.includes(s2)), colors: IQ_COL.filter(c2 => !colors.includes(c2)), counts:[1,2,4] };
   }
   const correct = cell(2,2);
+  // дистракторы собираем только из формы/цвета/размера/количества, которые реально встречаются
+  // где-то в сетке (просто не в этой клетке) — так вариант нельзя отбросить методом "такого я
+  // тут вообще не видел", не решая саму логическую задачу
+  const pool = {
+    shapes: shapes.filter(s2 => s2 !== correct.shape),
+    colors: colors.filter(c2 => c2 !== correct.color),
+  };
+  if (level === 3) pool.sizes = sizes3.filter(v => v !== correct.r);
+  if (level === 4) pool.counts = counts3.filter(v => v !== correct.count);
   const opts = shuffle([correct, ...iqDistractors(correct, pool)]);
   return { type:'matrix', cell, correct, opts };
 }
@@ -502,10 +507,13 @@ function iqGenOdd(kind){
     let cand = oddIdx*45 + 90;
     while (taken.has(norm(cand)) || norm(cand) === norm(oddIdx*45)) cand += 45;
     items[oddIdx] = {shape:'triangle', color, r:17, count:1, rot:cand, stroke:false};
-  } else if (kind === 'alt'){ // цвета чередуются через один, одна карточка ломает чередование
-    oddIdx = Math.floor(Math.random()*5);
+  } else if (kind === 'alt'){ // цвета чередуются через один (3×A, 2×B), одна из A-позиций красится в третий, нигде больше не встречающийся цвет
+    // важно: ломаем только позицию из тройки (0,2,4), а не из пары (1,3) — иначе после замены
+    // останется "осиротевшая" единственная B-карточка и получатся сразу два одинаково уникальных элемента
+    oddIdx = [0,2,4][Math.floor(Math.random()*3)];
+    const oddColor = iqPick(IQ_COL, color, color2);
     items = Array.from({length:5}, (_,i) => ({shape, color: i%2 ? color2 : color, r:15, count:1, rot:0, stroke:false}));
-    items[oddIdx] = {shape, color: oddIdx%2 ? color : color2, r:15, count:1, rot:0, stroke:false};
+    items[oddIdx] = {shape, color: oddColor, r:15, count:1, rot:0, stroke:false};
   } else { // сложно: форма и цвет идут двумя параллельными циклами, сбит цветовой
     const shapes = shuffle(IQ_SH).slice(0,3), colors = shuffle(IQ_COL).slice(0,3);
     // позиция сбоя — только там, где цвет повторяется (иначе палитра схлопнется до 2 цветов и возникнет двусмысленность)
@@ -559,18 +567,21 @@ function iqGenAnalogy(kind){
 function iqGenDots(kind){
   const counts = shuffle([1,2,3,4]).slice(0,3); // значения количества (по столбцам)
   const colors = shuffle(IQ_COL).slice(0,3);
-  let cell, pool;
+  let cell;
   if (kind === 'count'){        // количество по столбцу, цвет по строке
     cell = (r,c) => ({ dots: counts[c], color: colors[r] });
-    pool = { dots:[2,5,6] };
   } else if (kind === 'diag'){  // количество по диагональному правилу (r+c)
     cell = (r,c) => ({ dots: counts[(r+c)%3], color: colors[r] });
-    pool = { dots:[2,5,6] };
   } else {                      // супер: два правила одновременно
     cell = (r,c) => ({ dots: counts[c], color: colors[(r+c)%3] });
-    pool = { dots:[2,5,6], colors:[iqPick(IQ_COL, colors[0]), iqPick(IQ_COL, colors[1])] };
   }
   const correct = cell(2,2);
+  // как и в матрицах: дистракторы — только количества/цвета, реально встречающиеся в сетке
+  // (просто не в этой клетке), чтобы число вариантов и сама логика совпадали с остальными заданиями
+  const pool = {
+    dots: counts.filter(d => d !== correct.dots),
+    colors: colors.filter(c => c !== correct.color),
+  };
   const opts = shuffle([correct, ...iqDotDistractors(correct, pool)]);
   return { type:'dots', cell, correct, opts };
 }
@@ -579,7 +590,7 @@ function iqDotDistractors(correct, pool){
   const add = o => { if (!cand.some(x => x.dots===o.dots && x.color===o.color) && !(o.dots===correct.dots && o.color===correct.color)) cand.push(o); };
   pool.dots.forEach(d => add({ dots:d, color:correct.color }));
   (pool.colors||[]).forEach(c => add({ dots:correct.dots, color:c }));
-  return shuffle(cand).slice(0,3);
+  return shuffle(cand).slice(0,4);
 }
 const iqDotSVG = o => iqSVG({ shape:'circle', color:o.color, r:9, count:o.dots, rot:0, stroke:false });
 const iqDotSame = (a, b) => a.dots===b.dots && a.color===b.color;

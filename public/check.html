@@ -208,7 +208,7 @@ const tgu = tg.initDataUnsafe?.user;
 $('#hello').textContent = 'Привет, ' + (tgu?.first_name || 'гость');
 {
   const ava = $('#ava');
-  if (tgu?.photo_url) ava.style.backgroundImage = 'url("' + tgu.photo_url + '")';
+  if (tgu?.photo_url) ava.style.backgroundImage = `url(${JSON.stringify(tgu.photo_url)})`;
   else { ava.textContent = tgu?.first_name ? tgu.first_name[0].toUpperCase() : '👤'; ava.classList.add('fb'); }
 }
 
