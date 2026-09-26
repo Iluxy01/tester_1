@@ -137,8 +137,8 @@ transform:scale(.92);transition:transform .2s cubic-bezier(.2,.8,.2,1)}
 .mbox small{display:block;margin:8px 0 18px;color:var(--mut);font-size:13.5px}
 /* шапка, аватар, статистика, вкладка заданий */
 .who{display:flex;align-items:center;gap:11px;min-width:0}
-.ava{flex:none;width:48px;height:48px;border-radius:50%;background:var(--glass) center/cover no-repeat;border:2px solid var(--line);
-display:grid;place-items:center;font-weight:800;font-size:17px;box-shadow:0 6px 18px -6px rgba(139,123,255,.55)}
+.ava{flex:none;width:52px;height:52px;border-radius:50%;background:var(--glass) center/cover no-repeat;border:none;
+display:grid;place-items:center;font-weight:800;font-size:18px;box-shadow:0 0 0 2px var(--line),0 6px 18px -6px rgba(139,123,255,.55)}
 .ava.fb{background:linear-gradient(135deg,#8B7BFF,#4FC3FF);color:#fff;border-color:transparent}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
 .st{background:var(--glass);border:1px solid var(--line);border-radius:16px;padding:13px 8px;text-align:center}
@@ -158,7 +158,7 @@ font-weight:800;font-size:17px;color:#fff;background:linear-gradient(135deg,#5F4
 .mxcell{aspect-ratio:1;border-radius:12px;background:var(--glass);border:1px solid var(--line);display:grid;place-items:center;overflow:hidden;padding:4px}
 .mxcell.qmark{color:var(--mut);font-size:26px;font-weight:800}
 .mxcell.q{font-size:28px;font-weight:800;color:var(--mut)}
-.shopts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:4px}
+.shopts{display:grid;grid-template-columns:1fr;justify-items:center;gap:9px;margin-top:20px}
 .shopt{all:unset;box-sizing:border-box;width:58px;height:58px;padding:4px;border-radius:12px;background:var(--glass);border:1px solid var(--line);display:grid;place-items:center;cursor:pointer;transition:transform .15s;animation:cardIn .3s cubic-bezier(.2,.8,.2,1) backwards}
 .shopt:active{transform:scale(.94)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
