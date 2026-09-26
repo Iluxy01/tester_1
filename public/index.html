@@ -423,6 +423,7 @@ function iqGenMatrix(level){
   // 2: форма и цвет — два независимых латинских квадрата
   // 3: + размер по столбцу (шаги видны глазу)
   // 4 (супер): форма+цвет квадраты, количество по столбцу — три правила сразу
+  // правило количества видно только при count>1; размер при count>1 не виден (см. iqVKey)
   const shapes = shuffle(IQ_SH).slice(0,3), colors = shuffle(IQ_COL).slice(0,3);
   let cell, pool;
   if (level === 1){
@@ -554,11 +555,41 @@ function iqGenAnalogy(kind){
   return { type:'analogy', A, B, C, correct, opts: shuffle(opts) };
 }
 
+// --- семейство «точки в сетке»: ячейка = N точек одного цвета; правила по количеству и цвету ---
+function iqGenDots(kind){
+  const counts = shuffle([1,2,3,4]).slice(0,3); // значения количества (по столбцам)
+  const colors = shuffle(IQ_COL).slice(0,3);
+  let cell, pool;
+  if (kind === 'count'){        // количество по столбцу, цвет по строке
+    cell = (r,c) => ({ dots: counts[c], color: colors[r] });
+    pool = { dots:[2,5,6] };
+  } else if (kind === 'diag'){  // количество по диагональному правилу (r+c)
+    cell = (r,c) => ({ dots: counts[(r+c)%3], color: colors[r] });
+    pool = { dots:[2,5,6] };
+  } else {                      // супер: два правила одновременно
+    cell = (r,c) => ({ dots: counts[c], color: colors[(r+c)%3] });
+    pool = { dots:[2,5,6], colors:[iqPick(IQ_COL, colors[0]), iqPick(IQ_COL, colors[1])] };
+  }
+  const correct = cell(2,2);
+  const opts = shuffle([correct, ...iqDotDistractors(correct, pool)]);
+  return { type:'dots', cell, correct, opts };
+}
+function iqDotDistractors(correct, pool){
+  const cand = [];
+  const add = o => { if (!cand.some(x => x.dots===o.dots && x.color===o.color) && !(o.dots===correct.dots && o.color===correct.color)) cand.push(o); };
+  pool.dots.forEach(d => add({ dots:d, color:correct.color }));
+  (pool.colors||[]).forEach(c => add({ dots:correct.dots, color:c }));
+  return shuffle(cand).slice(0,3);
+}
+const iqDotSVG = o => iqSVG({ shape:'circle', color:o.color, r:9, count:o.dots, rot:0, stroke:false });
+const iqDotSame = (a, b) => a.dots===b.dots && a.color===b.color;
+
 const IQ_PLAN = [
   () => iqGenMatrix(1),
   () => iqGenMatrix(2), () => iqGenMatrix(2),
   () => iqGenMatrix(3), () => iqGenMatrix(3),
   () => iqGenMatrix(4),                                            // супер
+  () => iqGenDots('count'), () => iqGenDots('diag'), () => iqGenDots('super'),
   () => iqGenSeries('count'),
   () => iqGenSeries('size'),
   () => iqGenSeries('fibo'),
@@ -806,6 +837,14 @@ const TESTS = {
             <button class="exbtn" id="exit">Завершить</button></div>`;
           wireExit(g);
           document.querySelectorAll('.shopt').forEach((b,j) => b.onclick = () => { if (g===gen) answer(b, iqSame(it.opts[j], it.correct)); });
+        } else if (it.type === 'dots') {
+          const grid = Array.from({length:9}, (_, k) => { const r = k/3|0, c = k%3;
+            return (r===2&&c===2) ? '<div class="mxcell qmark">?</div>' : `<div class="mxcell">${iqDotSVG(it.cell(r,c))}</div>`; }).join('');
+          $('#stage').innerHTML = `<div style="${padStyle('iq')}">${bar}<p class="q" style="font-size:17px">Что должно быть вместо «?»</p>
+            <div class="mxgrid">${grid}</div><div class="shopts">${it.opts.map((o, j) => `<button class="shopt"><i class="shnum">${j+1}</i><span class="shfig">${iqDotSVG(o)}</span></button>`).join('')}</div>
+            <button class="exbtn" id="exit">Завершить</button></div>`;
+          wireExit(g);
+          document.querySelectorAll('.shopt').forEach((b,j) => b.onclick = () => { if (g===gen) answer(b, iqDotSame(it.opts[j], it.correct)); });
         } else {
           $('#stage').innerHTML = `<div style="${padStyle('iq')}">${bar}<p class="q" style="font-size:17px">Найди лишнюю картинку</p>
             <div class="shopts">${it.items.map((s, j) => `<button class="shopt"><i class="shnum">${j+1}</i><span class="shfig">${iqSVG(s)}</span></button>`).join('')}</div>
