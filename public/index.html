@@ -183,6 +183,48 @@ font-weight:800;font-size:17px;color:#fff;background:linear-gradient(135deg,#5F4
 </main>
 
 <script>
+// ============================================================================
+// НАСТРОЙКА БОНУСА ЗА ВРЕМЯ (тесты «IQ» и «Логика»)
+// ----------------------------------------------------------------------------
+// В обоих тестах теперь засекается время прохождения. Итоговый балл =
+// базовый результат + бонус за скорость, но не выше SCORE_MAX.
+//
+// Отредактируйте таблицы под себя: underSec — «уложился в столько секунд
+// или быстрее», bonus — сколько баллов добавить за это. Порядок строк
+// в таблице не важен, можно добавлять/удалять строки как угодно.
+// ============================================================================
+const SCORE_MAX = 150;
+
+const TIME_BONUS_TABLE = {
+  iq: [                            // время — на ВЕСЬ тест (все задания IQ)
+    { underSec: 90,  bonus: 30 },
+    { underSec: 150, bonus: 20 },
+    { underSec: 240, bonus: 10 },
+    { underSec: 360, bonus: 5  },
+  ],
+  logic: [                         // время — на ВЕСЬ тест (10 вопросов)
+    { underSec: 60,  bonus: 30 },
+    { underSec: 100, bonus: 20 },
+    { underSec: 150, bonus: 10 },
+    { underSec: 240, bonus: 5  },
+  ],
+};
+
+// сколько баллов даёт один правильный ответ в «Логике» — раньше результат
+// был «из 10», теперь переводится в ту же шкалу баллов, что и IQ (0..SCORE_MAX)
+const LOGIC_POINTS_PER_CORRECT = 12; // 10 вопросов × 12 = 120 базовых баллов макс.
+
+function timeBonus(kind, seconds){
+  const rows = [...(TIME_BONUS_TABLE[kind] || [])].sort((a, b) => a.underSec - b.underSec);
+  for (const row of rows) if (seconds <= row.underSec) return row.bonus;
+  return 0;
+}
+function fmtTime(seconds){
+  const s = Math.max(0, Math.round(seconds));
+  return s < 60 ? `${s} сек` : `${Math.floor(s / 60)} мин ${s % 60} сек`;
+}
+// ============================================================================
+
 const tg = Telegram.WebApp; tg.ready(); tg.expand();
 try { tg.setHeaderColor('#0B0A1F'); tg.setBackgroundColor('#0B0A1F'); } catch {}
 const $ = s => document.querySelector(s);
@@ -224,7 +266,7 @@ const clamp = x => Math.max(0, Math.min(1, x));
 const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const META = [
   { key:'reaction', title:'Реакция',        icon:'⚡', a:'#FF5C8A', b:'#FF9A5C', unit:'мс',    rule:'min', norm:v => (500 - v) / 350 },
-  { key:'logic',    title:'Логика',         icon:'🧩', a:'#FF6FD8', b:'#B24DFF', unit:'из 10', rule:'max', norm:v => v / 10 },
+  { key:'logic',    title:'Логика',         icon:'🧩', a:'#FF6FD8', b:'#B24DFF', unit:'баллов', rule:'max', norm:v => clamp(v / SCORE_MAX) },
   { key:'taps',     title:'Скорость тапов', icon:'👆', a:'#3CFFB0', b:'#3CB4FF', unit:'тап/с', rule:'max', norm:v => v / 10 },
   { key:'memory',   title:'Память',         icon:'🎴', a:'#FFD34D', b:'#FF7A3D', unit:'из 10', rule:'max', norm:v => v / 10 },
   { key:'iq',       title:'IQ',             icon:'🧠', a:'#4FC3FF', b:'#5F45FF', unit:'IQ',    rule:'max', norm:v => clamp((v - 55) / 95) },
@@ -514,12 +556,19 @@ function iqGenOdd(kind){
     const oddColor = iqPick(IQ_COL, color, color2);
     items = Array.from({length:5}, (_,i) => ({shape, color: i%2 ? color2 : color, r:15, count:1, rot:0, stroke:false}));
     items[oddIdx] = {shape, color: oddColor, r:15, count:1, rot:0, stroke:false};
-  } else { // сложно: форма и цвет идут двумя параллельными циклами, сбит цветовой
-    const shapes = shuffle(IQ_SH).slice(0,3), colors = shuffle(IQ_COL).slice(0,3);
-    // позиция сбоя — только там, где цвет повторяется (иначе палитра схлопнется до 2 цветов и возникнет двусмысленность)
-    oddIdx = [0,1,3,4][Math.floor(Math.random()*4)];
-    items = Array.from({length:5}, (_,i) => ({shape:shapes[i%3], color:colors[i%3], r:13, count:1, rot:0, stroke:false}));
-    items[oddIdx] = {...items[oddIdx], color:colors[(oddIdx+1)%3]};
+  } else { // сложно: 4 карточки образуют две одинаковые пары (форма+цвет), пятая не имеет пары ни по форме, ни по цвету
+    const [s1, s2] = shuffle(IQ_SH).slice(0,2);
+    const [c1, c2] = shuffle(IQ_COL).slice(0,2);
+    const oddShape = iqPick(IQ_SH, s1, s2);
+    const oddColor = iqPick(IQ_COL, c1, c2);
+    oddIdx = Math.floor(Math.random()*5);
+    const pairPos = shuffle([0,1,2,3,4].filter(i => i !== oddIdx));
+    items = new Array(5);
+    items[pairPos[0]] = {shape:s1, color:c1, r:13, count:1, rot:0, stroke:false};
+    items[pairPos[1]] = {shape:s1, color:c1, r:13, count:1, rot:0, stroke:false};
+    items[pairPos[2]] = {shape:s2, color:c2, r:13, count:1, rot:0, stroke:false};
+    items[pairPos[3]] = {shape:s2, color:c2, r:13, count:1, rot:0, stroke:false};
+    items[oddIdx] = {shape:oddShape, color:oddColor, r:13, count:1, rot:0, stroke:false};
   }
   return { type:'odd', items, oddIdx };
 }
@@ -625,7 +674,7 @@ function iqAgeExpected(age){
 }
 function iqCalc(correct, total, age){
   const z = (correct/total - iqAgeExpected(age)) / .155;
-  return Math.max(55, Math.min(150, Math.round(100 + z*15)));
+  return Math.max(55, Math.min(SCORE_MAX, Math.round(100 + z*15)));
 }
 function iqVerdict(score){
   if (score >= 135) return 'Уровень гения';
@@ -718,10 +767,15 @@ const TESTS = {
     // 10 разноплановых вопросов: 2 дедукции + 2 вербальных + 2 комбинаторики + 4 загадки
     const txt = ([q, o, a2]) => { const oo = shuffle(o); return { type:'txt', q, o: oo, ai: oo.indexOf(a2) }; };
     const Q = shuffle([...shuffle(DED).slice(0, 2), ...shuffle(VRB).slice(0, 2), ...shuffle(LOG).slice(0, 2), ...shuffle(POOL).slice(0, 4)].map(txt));
+    const startedAt = performance.now();
     let i = 0, correct = 0;
     const next = () => { if (g !== gen) return; if (i < Q.length) return ask();
-      const v = correct, verdict = v >= 9 ? 'Гений логики!' : v >= 7 ? 'Отличный результат' : v >= 5 ? 'Неплохо!' : v >= 3 ? 'Есть куда расти' : 'Попробуй ещё раз';
-      finish('logic', v, verdict); };
+      const elapsedSec = (performance.now() - startedAt) / 1000;
+      const base = correct * LOGIC_POINTS_PER_CORRECT;
+      const bonus = timeBonus('logic', elapsedSec);
+      const score = Math.min(SCORE_MAX, base + bonus);
+      const verdict = score >= 135 ? 'Гений логики!' : score >= 100 ? 'Отличный результат' : score >= 70 ? 'Неплохо!' : score >= 40 ? 'Есть куда расти' : 'Попробуй ещё раз';
+      finish('logic', score, `${verdict} · время: ${fmtTime(elapsedSec)}${bonus ? ` (+${bonus} за скорость)` : ''}`); };
     const ask = () => {
       if (g !== gen) return;
       const it = Q[i];
@@ -810,6 +864,7 @@ const TESTS = {
     };
     const runQuiz = age => {
       const Q = shuffle(IQ_PLAN).map(f => f());
+      const startedAt = performance.now();
       let i = 0, correct = 0;
       const answer = (b, ok) => {
         if (ok) correct++;
@@ -820,7 +875,13 @@ const TESTS = {
       };
       const ask = () => {
         if (g !== gen) return;
-        if (i >= N) { const score = iqCalc(correct, N, age); return finish('iq', score, `${iqVerdict(score)} для ${age} лет`); }
+        if (i >= N) {
+          const elapsedSec = (performance.now() - startedAt) / 1000;
+          const base = iqCalc(correct, N, age);
+          const bonus = timeBonus('iq', elapsedSec);
+          const score = Math.min(SCORE_MAX, base + bonus);
+          return finish('iq', score, `${iqVerdict(score)} для ${age} лет · время: ${fmtTime(elapsedSec)}${bonus ? ` (+${bonus} за скорость)` : ''}`);
+        }
         const it = Q[i];
         const bar = `<div class="bar"><i style="width:${i/N*100}%"></i></div>`;
         if (it.type === 'matrix') {
