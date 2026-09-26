@@ -158,8 +158,10 @@ font-weight:800;font-size:17px;color:#fff;background:linear-gradient(135deg,#5F4
 .mxcell{aspect-ratio:1;border-radius:12px;background:var(--glass);border:1px solid var(--line);display:grid;place-items:center;overflow:hidden;padding:4px}
 .mxcell.qmark{color:var(--mut);font-size:26px;font-weight:800}
 .mxcell.q{font-size:28px;font-weight:800;color:var(--mut)}
-.shopts{display:grid;grid-template-columns:1fr;justify-items:center;gap:9px;margin-top:20px}
-.shopt{all:unset;box-sizing:border-box;width:58px;height:58px;padding:4px;border-radius:12px;background:var(--glass);border:1px solid var(--line);display:grid;place-items:center;cursor:pointer;transition:transform .15s;animation:cardIn .3s cubic-bezier(.2,.8,.2,1) backwards}
+.shopts{display:grid;grid-template-columns:1fr;justify-items:start;gap:9px;margin-top:20px}
+.shopt{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;width:100%;max-width:240px;padding:6px;border-radius:12px;background:var(--glass);border:1px solid var(--line);cursor:pointer;transition:transform .15s;animation:cardIn .3s cubic-bezier(.2,.8,.2,1) backwards}
+.shnum{flex:none;width:26px;height:26px;border-radius:9px;display:grid;place-items:center;font-weight:800;font-size:13px;font-style:normal;background:rgba(255,255,255,.12)}
+.shfig{flex:none;width:50px;height:50px}
 .shopt:active{transform:scale(.94)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -629,31 +631,14 @@ const TESTS = {
     };
   },
   logic(g){
-    // визуальные матрицы в стиле прогрессивных матриц Равена (из бывшего IQ-теста)
-    const SH = ['circle','square','triangle','star'];
-    const COL = ['#8B7BFF','#FF5C8A','#3CFFB0','#FFD34D'];
-    const draw = (shape, r) => shape === 'circle' ? `<circle cx="30" cy="30" r="${r}"/>` :
-      shape === 'square' ? `<rect x="${30-r}" y="${30-r}" width="${r*2}" height="${r*2}"/>` :
-      shape === 'triangle' ? `<polygon points="30,${30-r} ${30+r*.87},${30+r*.5} ${30-r*.87},${30+r*.5}"/>` :
-      (() => { const p = []; for (let k = 0; k < 10; k++) { const a = Math.PI/5*k - Math.PI/2, rr = k%2 ? r*.45 : r; p.push(`${30+Math.cos(a)*rr},${30+Math.sin(a)*rr}`); } return `<polygon points="${p.join(' ')}"/>`; })();
-    const shapeSVG = (shape, color, rot) => `<svg viewBox="0 0 60 60" width="46" height="46"><g fill="${color}" transform="rotate(${rot} 30 30)">${draw(shape, 18)}</g></svg>`;
-    const same = (a, b) => a.shape === b.shape && a.color === b.color && a.rot === b.rot;
-    const genMatrix = hard => {
-      const shapes = shuffle(SH).slice(0, 3), colors = shuffle(COL).slice(0, 3), rots = hard ? [0, 120, 240] : [0, 0, 0];
-      const cell = (r, c) => ({ shape: shapes[(c + r) % 3], color: colors[(c + r * 2) % 3], rot: rots[(c + r) % 3] });
-      const correct = cell(2, 2), opts = [correct];
-      while (opts.length < 5) {
-        const cand = { shape: shapes[Math.floor(Math.random()*3)], color: colors[Math.floor(Math.random()*3)], rot: rots[Math.floor(Math.random()*3)] };
-        if (!opts.some(o => same(o, cand))) opts.push(cand);
-      }
-      return { cell, correct, opts: shuffle(opts) };
-    };
-    // числовые ряды
-    const NUM = [
-      ['Продолжи ряд: 1, 4, 9, 16, 25, …?', ['30','32','36','49'], '36'],
-      ['2, 6, 18, 54, …?', ['108','148','162','216'], '162'],
-      ['1, 1, 2, 3, 5, 8, 13, …?', ['18','19','20','21'], '21'],
-      ['Сколько будет 15% от 200?', ['20','30','40','50'], '30'],
+    // только текстовые задачи — визуальные (матрицы/ряды) остались в IQ-тесте
+    // дедукция: порядок, сравнения
+    const DED = [
+      ['Аня старше Бори, а Боря старше Вики. Кто самый младший?', ['Аня','Боря','Вика','Все ровесники'], 'Вика'],
+      ['В забеге Дима пришёл раньше Миши, но позже Саши. Кто победил?', ['Дима','Миша','Саша','Нельзя определить'], 'Саша'],
+      ['Ручка дороже тетради, а тетрадь дороже линейки. Что дешевле всех?', ['Ручка','Тетрадь','Линейка','Одинаково'], 'Линейка'],
+      ['У Лены столько же конфет, сколько у Оли. Оля отдала ей 2 конфеты. На сколько теперь у Лены конфет больше?', ['На 2','На 3','На 4','Поровну'], 'На 4'],
+      ['Саша выше Пети, Петя выше Коли. Кто ниже всех?', ['Саша','Петя','Коля','Одинаковые'], 'Коля'],
     ];
     // вербальная логика
     const VRB = [
@@ -661,6 +646,15 @@ const TESTS = {
       ['Какое слово лишнее: весы, грусть, радость, скука?', ['весы','грусть','радость','скука'], 'весы'],
       ['Все розы — цветы. Некоторые цветы увядают. Значит, некоторые розы увядают?', ['Да','Нет','Нельзя сказать','Все розы'], 'Нельзя сказать'],
       ['Найди аналогию: Книга — Библиотека, как Картина — …', ['Художник','Музей','Рама','Кисть'], 'Музей'],
+      ['Найди аналогию: Птица — Гнездо, как Пчела — …', ['Мёд','Улей','Цветок','Жало'], 'Улей'],
+    ];
+    // комбинаторика и смекалка посерьёзнее
+    const LOG = [
+      ['Одно яйцо варится 4 минуты. Сколько минут варятся 5 яиц?', ['4','8','16','20'], '4'],
+      ['Сколько раз можно вычесть 5 из 25?', ['Один','Пять','Десять','Бесконечно'], 'Один'],
+      ['Двое подошли к реке с разных берегов. У берега лодка, выдерживающая только одного. Оба переправились. Как?', ['С разных берегов по очереди','Вдвоём','Вплавь','Так нельзя'], 'С разных берегов по очереди'],
+      ['В корзине 5 яблок. Раздай их пятерым так, чтобы каждому досталось по яблоку и одно осталось в корзине.', ['Отдать корзину с яблоком','Разрезать яблоко','Это невозможно','Оставить себе'], 'Отдать корзину с яблоком'],
+      ['Термометр показывает 15 градусов. Сколько градусов покажут два таких термометра?', ['15','30','45','60'], '15'],
     ];
     // загадки на смекалку
     const POOL = [
@@ -671,20 +665,17 @@ const TESTS = {
       ['Сколько месяцев в году имеют 28 дней?', ['1','6','12','0'], '12'],
       ['Что идёт, не двигаясь с места?', ['Часы','Дорога','Время','Река'], 'Время'],
       ['Чем больше из неё берёшь, тем больше она становится. Что это?', ['Яма','Гора','Река','Тень'], 'Яма'],
-      ['Найди лишнее: круг, квадрат, треугольник, куб', ['круг','квадрат','треугольник','куб'], 'куб'],
       ['Два кольца, два конца, а посередине гвоздик. Что это?', ['Ножницы','Очки','Велосипед','Наручники'], 'Ножницы'],
       ['Врач дал 3 таблетки и сказал пить по одной каждые 15 минут. На сколько хватит?', ['15 минут','30 минут','45 минут','60 минут'], '30 минут'],
       ['Раздели дюжину пополам и прибавь треть от 9. Сколько получится?', ['6','7','9','12'], '9'],
       ['Что общего у всех месяцев года?', ['У всех 31 день','Начинаются с буквы А','В каждом есть 28 дней','Заканчиваются на "рь"'], 'В каждом есть 28 дней'],
-      ['Найди лишнее: скрипка, гитара, виолончель, барабан', ['скрипка','гитара','виолончель','барабан'], 'барабан'],
       ['Летела стая гусей: один впереди и два позади, один позади и два впереди, один между двумя и три в ряд. Сколько всего гусей?', ['3','4','5','6'], '3'],
       ['Что нельзя положить даже в самую большую комнату?', ['Тишину','Пространство','Ничего','Свет'], 'Ничего'],
+      ['Каким по счёту будет слон, если он обгонит бегущего вторым?', ['Первым','Вторым','Третьим','Слоны не бегают'], 'Вторым'],
     ];
-    // 10 разноплановых вопросов: 2 матрицы + 2 числовых + 2 вербальных + 4 загадки, вперемешку
-    const M = [genMatrix(false), genMatrix(true)].map((mx, k) => ({ type:'mx', hard: k === 1, mx }));
-    const txt = ([q, o, a]) => { const oo = shuffle(o); return { type:'txt', q, o: oo, ai: oo.indexOf(a) }; };
-    const mixed = [...shuffle(NUM).slice(0, 2), ...shuffle(VRB).slice(0, 2), ...shuffle(POOL).slice(0, 4)].map(txt);
-    const Q = shuffle([...M, ...mixed]);
+    // 10 разноплановых вопросов: 2 дедукции + 2 вербальных + 2 комбинаторики + 4 загадки
+    const txt = ([q, o, a2]) => { const oo = shuffle(o); return { type:'txt', q, o: oo, ai: oo.indexOf(a2) }; };
+    const Q = shuffle([...shuffle(DED).slice(0, 2), ...shuffle(VRB).slice(0, 2), ...shuffle(LOG).slice(0, 2), ...shuffle(POOL).slice(0, 4)].map(txt));
     let i = 0, correct = 0;
     const next = () => { if (g !== gen) return; if (i < Q.length) return ask();
       const v = correct, verdict = v >= 9 ? 'Гений логики!' : v >= 7 ? 'Отличный результат' : v >= 5 ? 'Неплохо!' : v >= 3 ? 'Есть куда расти' : 'Попробуй ещё раз';
@@ -692,36 +683,18 @@ const TESTS = {
     const ask = () => {
       if (g !== gen) return;
       const it = Q[i];
-      if (it.type === 'mx') {
-        const grid = Array.from({length:9}, (_, k) => { const r = k/3|0, c = k%3;
-          return (r===2&&c===2) ? '<div class="mxcell qmark">?</div>' : `<div class="mxcell">${shapeSVG(it.mx.cell(r,c).shape,it.mx.cell(r,c).color,it.mx.cell(r,c).rot)}</div>`; }).join('');
-        $('#stage').innerHTML = `<div style="${padStyle('logic')}"><div class="bar"><i style="width:${i/Q.length*100}%"></i></div><p class="q" style="font-size:18px">Какая фигура должна быть на месте «?»${it.hard ? ' (сложный уровень)' : ''}</p>
-          <div class="mxgrid">${grid}</div><div class="shopts">${it.mx.opts.map(o => `<button class="shopt">${shapeSVG(o.shape,o.color,o.rot)}</button>`).join('')}</div>
-          <button class="exbtn" id="exit">Завершить</button></div>`;
-        wireExit(g);
-        document.querySelectorAll('.shopt').forEach((b, j) => b.onclick = () => {
-          if (g !== gen) return;
-          const ok = same(it.mx.opts[j], it.mx.correct);
-          if (ok) correct++;
-          haptic('impact', ok ? 'light' : 'rigid');
-          b.style.background = ok ? 'linear-gradient(135deg,#3CFFB0,#3CB4FF)' : 'linear-gradient(135deg,#FF5C8A,#FF9A5C)';
-          document.querySelectorAll('.shopt').forEach(x => x.onclick = null);
-          setTimeout(() => { if (g !== gen) return; i++; next(); }, 500);
-        });
-      } else {
-        $('#stage').innerHTML = `<div style="${padStyle('logic')}"><div class="bar"><i style="width:${i/Q.length*100}%"></i></div><p class="q">${it.q}</p>` +
-          it.o.map((o, j) => `<button class="opt" style="animation-delay:${j*40}ms" data-j="${j}">${o}</button>`).join('') +
-          `<button class="exbtn" id="exit">Завершить</button></div>`;
-        wireExit(g);
-        document.querySelectorAll('.opt').forEach(b => b.onclick = () => {
-          if (g !== gen) return;
-          const ok = +b.dataset.j === it.ai; if (ok) correct++;
-          haptic('impact', ok ? 'light' : 'rigid');
-          document.querySelectorAll('.opt').forEach(x => { x.onclick = null; if (+x.dataset.j === it.ai) x.style.background = 'linear-gradient(135deg,#3CFFB0,#3CB4FF)'; });
-          if (!ok) b.style.background = 'linear-gradient(135deg,#FF5C8A,#FF9A5C)';
-          setTimeout(() => { if (g !== gen) return; i++; next(); }, 500);
-        });
-      }
+      $('#stage').innerHTML = `<div style="${padStyle('logic')}"><div class="bar"><i style="width:${i/Q.length*100}%"></i></div><p class="q">${it.q}</p>` +
+        it.o.map((o, j) => `<button class="opt" style="animation-delay:${j*40}ms" data-j="${j}">${o}</button>`).join('') +
+        `<button class="exbtn" id="exit">Завершить</button></div>`;
+      wireExit(g);
+      document.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+        if (g !== gen) return;
+        const ok = +b.dataset.j === it.ai; if (ok) correct++;
+        haptic('impact', ok ? 'light' : 'rigid');
+        document.querySelectorAll('.opt').forEach(x => { x.onclick = null; if (+x.dataset.j === it.ai) x.style.background = 'linear-gradient(135deg,#3CFFB0,#3CB4FF)'; });
+        if (!ok) b.style.background = 'linear-gradient(135deg,#FF5C8A,#FF9A5C)';
+        setTimeout(() => { if (g !== gen) return; i++; next(); }, 500);
+      });
     };
     ask();
   },
@@ -812,7 +785,7 @@ const TESTS = {
           const grid = Array.from({length:9}, (_, k) => { const r = k/3|0, c = k%3;
             return (r===2&&c===2) ? '<div class="mxcell qmark">?</div>' : `<div class="mxcell">${iqSVG(it.cell(r,c))}</div>`; }).join('');
           $('#stage').innerHTML = `<div style="${padStyle('iq')}">${bar}<p class="q" style="font-size:17px">Что должно быть вместо «?»</p>
-            <div class="mxgrid">${grid}</div><div class="shopts">${it.opts.map(o => `<button class="shopt">${iqSVG(o)}</button>`).join('')}</div>
+            <div class="mxgrid">${grid}</div><div class="shopts">${it.opts.map((o, j) => `<button class="shopt"><i class="shnum">${j+1}</i><span class="shfig">${iqSVG(o)}</span></button>`).join('')}</div>
             <button class="exbtn" id="exit">Завершить</button></div>`;
           wireExit(g);
           document.querySelectorAll('.shopt').forEach((b,j) => b.onclick = () => { if (g===gen) answer(b, iqSame(it.opts[j], it.correct)); });
@@ -820,7 +793,7 @@ const TESTS = {
           const row = it.shown.map(s => `<div class="mxcell">${iqSVG(s)}</div>`).join('') + '<div class="mxcell qmark">?</div>';
           $('#stage').innerHTML = `<div style="${padStyle('iq')}">${bar}<p class="q" style="font-size:17px">Продолжи закономерность</p>
             <div class="mxgrid" style="grid-template-columns:repeat(${it.shown.length+1},1fr);max-width:340px;gap:6px">${row}</div>
-            <div class="shopts">${it.opts.map(o => `<button class="shopt">${iqSVG(o)}</button>`).join('')}</div>
+            <div class="shopts">${it.opts.map((o, j) => `<button class="shopt"><i class="shnum">${j+1}</i><span class="shfig">${iqSVG(o)}</span></button>`).join('')}</div>
             <button class="exbtn" id="exit">Завершить</button></div>`;
           wireExit(g);
           document.querySelectorAll('.shopt').forEach((b,j) => b.onclick = () => { if (g===gen) answer(b, iqSame(it.opts[j], it.correct)); });
@@ -829,13 +802,13 @@ const TESTS = {
           $('#stage').innerHTML = `<div style="${padStyle('iq')}">${bar}<p class="q" style="font-size:17px">Первая пара задаёт правило — примени его ко второй</p>
             <div class="anrow">${cellH(it.A)}<span class="anarr">→</span>${cellH(it.B)}</div>
             <div class="anrow">${cellH(it.C)}<span class="anarr">→</span><div class="mxcell qmark">?</div></div>
-            <div class="shopts">${it.opts.map(o => `<button class="shopt">${iqSVG(o)}</button>`).join('')}</div>
+            <div class="shopts">${it.opts.map((o, j) => `<button class="shopt"><i class="shnum">${j+1}</i><span class="shfig">${iqSVG(o)}</span></button>`).join('')}</div>
             <button class="exbtn" id="exit">Завершить</button></div>`;
           wireExit(g);
           document.querySelectorAll('.shopt').forEach((b,j) => b.onclick = () => { if (g===gen) answer(b, iqSame(it.opts[j], it.correct)); });
         } else {
           $('#stage').innerHTML = `<div style="${padStyle('iq')}">${bar}<p class="q" style="font-size:17px">Найди лишнюю картинку</p>
-            <div class="shopts">${it.items.map(s => `<button class="shopt">${iqSVG(s)}</button>`).join('')}</div>
+            <div class="shopts">${it.items.map((s, j) => `<button class="shopt"><i class="shnum">${j+1}</i><span class="shfig">${iqSVG(s)}</span></button>`).join('')}</div>
             <button class="exbtn" id="exit">Завершить</button></div>`;
           wireExit(g);
           document.querySelectorAll('.shopt').forEach((b,j) => b.onclick = () => { if (g===gen) answer(b, j === it.oddIdx); });
